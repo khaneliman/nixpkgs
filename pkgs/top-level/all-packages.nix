@@ -25038,20 +25038,24 @@ with pkgs;
   libzra = callPackage ../development/libraries/libzra { };
 
   # requires a newer Apple SDK
-  zig_0_9 = darwin.apple_sdk_11_0.callPackage ../development/compilers/zig/0.9 {
+  zig_0_9 = callPackage ../development/compilers/zig/0.9 {
     llvmPackages = llvmPackages_13;
+    stdenv = if stdenv.isDarwin then overrideSDK stdenv "11.0" else stdenv;
   };
   # requires a newer Apple SDK
-  zig_0_10 = darwin.apple_sdk_11_0.callPackage ../development/compilers/zig/0.10 {
+  zig_0_10 = callPackage ../development/compilers/zig/0.10 {
     llvmPackages = llvmPackages_15;
+    stdenv = if stdenv.isDarwin then overrideSDK stdenv "11.0" else stdenv;
   };
   # requires a newer Apple SDK
-  zig_0_11 = darwin.apple_sdk_11_0.callPackage ../development/compilers/zig/0.11 {
+  zig_0_11 = callPackage ../development/compilers/zig/0.11 {
     llvmPackages = llvmPackages_16;
+    stdenv = if stdenv.isDarwin then overrideSDK stdenv "11.0" else stdenv;
   };
   # requires a newer Apple SDK
-  zig_0_12 = darwin.apple_sdk_11_0.callPackage ../development/compilers/zig/0.12 {
+  zig_0_12 = callPackage ../development/compilers/zig/0.12 {
     llvmPackages = llvmPackages_17;
+    stdenv = if stdenv.isDarwin then overrideSDK stdenv "11.0" else stdenv;
   };
   zig = zig_0_12;
 

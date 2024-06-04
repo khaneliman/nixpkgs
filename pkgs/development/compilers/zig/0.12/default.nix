@@ -33,9 +33,10 @@ stdenv.mkDerivation (finalAttrs: {
       zlib
     ]
     ++ (with llvmPackages; [
-      libclang
       lld
       llvm
+    ] ++ lib.optionals (!stdenv.isDarwin) [
+      libclang
     ]);
 
   outputs = [
@@ -50,6 +51,8 @@ stdenv.mkDerivation (finalAttrs: {
     (lib.cmakeFeature "ZIG_TARGET_MCPU" "baseline")
     # always link against static build of LLVM
     (lib.cmakeBool "ZIG_STATIC_LLVM" true)
+  ] ++ lib.optionals stdenv.isDarwin [
+    (lib.cmakeOptionType "path" "Clang_DIR" "${lib.getDev llvmPackages.libclang}/lib/cmake/clang")
   ];
 
   env.ZIG_GLOBAL_CACHE_DIR = "$TMPDIR/zig-cache";

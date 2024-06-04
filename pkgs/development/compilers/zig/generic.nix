@@ -31,9 +31,10 @@ stdenv.mkDerivation (finalAttrs: {
     libxml2
     zlib
   ] ++ (with llvmPackages; [
-    libclang
     lld
     llvm
+  ] ++ lib.optional (!stdenv.isDarwin) [
+    libclang
   ]);
 
   env.ZIG_GLOBAL_CACHE_DIR = "$TMPDIR/zig-cache";
