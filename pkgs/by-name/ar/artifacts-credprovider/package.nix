@@ -6,7 +6,6 @@
   dotnetCorePackages,
   mono,
 }:
-
 buildDotnetModule rec {
   pname = "artifacts-credprovider";
   version = "1.1.1";
