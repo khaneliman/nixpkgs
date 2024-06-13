@@ -1,0 +1,20 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2012/06/nuspec.xsd">
+  <metadata>
+    <id>PowerArgs</id>
+    <version>3.6.0</version>
+    <authors>Adam Abdelhamed</authors>
+    <owners>Adam Abdelhamed</owners>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <licenseUrl>https://github.com/adamabdelhamed/PowerArgs/blob/master/LICENSE.txt</licenseUrl>
+    <projectUrl>https://github.com/adamabdelhamed/powerargs</projectUrl>
+    <description>The ultimate command line application framework</description>
+    <releaseNotes>Minor fixes and performance improvements to the PowerArgs.Cli namespace</releaseNotes>
+    <copyright>Copyright 2017 (c) Adam Abdelhamed. All rights reserved.</copyright>
+    <tags>command line arguments parser CLI .NET Core Standard</tags>
+    <repository type="git" url="https://github.com/adamabdelhamed/powerargs" />
+    <dependencies>
+      <group targetFramework=".NETStandard2.0" />
+    </dependencies>
+  </metadata>
+</package>
