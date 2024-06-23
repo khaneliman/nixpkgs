@@ -5,15 +5,15 @@
   fetchFromGitHub,
   dotnetCorePackages,
   mono,
-  nuget-to-nix,
+# nuget-to-nix,
 }:
 let
-  extraFiles = stdenv.mkDerivation {
-    name = "my-folder-files";
-    buildInputs = [ ]; # No additional build dependencies
-    src = ./packages;
-  };
 in
+# extraFiles = stdenv.mkDerivation {
+#   name = "my-folder-files";
+#   buildInputs = [ ]; # No additional build dependencies
+#   src = ./packages;
+# };
 buildDotnetModule rec {
   pname = "artifacts-credprovider";
   version = "1.1.1";
@@ -35,16 +35,16 @@ buildDotnetModule rec {
 
   doCheck = !(stdenv.isDarwin && stdenv.isAarch64); # mono is not available on aarch64-darwin
 
-  nativeBuildInputs = [ nuget-to-nix ];
+  # nativeBuildInputs = [ nuget-to-nix ];
 
   nativeCheckInputs = [ mono ];
 
   testProjectFile = "CredentialProvider.Microsoft.Tests/CredentialProvider.Microsoft.Tests.csproj";
 
-  # passthru.updateScript = ./updater.sh;
-  passthru.updateScript = ''
-    nuget-to-nix ${extraFiles.outPath} > deps.nix
-  '';
+  passthru.updateScript = ./updater.sh;
+  # passthru.updateScript = ''
+  #   nuget-to-nix ${extraFiles.outPath} > deps.nix
+  # '';
 
   meta = {
     description = "Automates the acquisition of credentials needed to restore NuGet packages as part of your .NET development workflow";
