@@ -4,8 +4,9 @@
 set -eo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")"
 
-deps_file="$(realpath "./deps.nix")"
-new_version="$(curl -s "https://api.github.com/repos/microsoft/artifacts-credprovider/releases?per_page=1" | jq -r '.[0].name')"
+new_version="$(curl -s -H "Accept: application/vnd.github.v3+json" \
+    "${GITHUB_TOKEN:+ -H "Authorization: bearer $GITHUB_TOKEN"}" \
+    "https://api.github.com/repos/microsoft/artifacts-credprovider/releases?per_page=1" | jq -r '.[0].name')"
 old_version="$(sed -nE 's/\s*version = "(.*)".*/\1/p' ./package.nix)"
 
 if [[ "$new_version" == "$old_version" ]]; then
@@ -15,4 +16,4 @@ fi
 
 cd ../../../..
 update-source-version artifacts-credprovider "${new_version//v/}"
-"$(nix-build . -A artifacts-credprovider.fetch-deps --no-out-link)" "$deps_file"
+"$(nix-build . -A artifacts-credprovider.fetch-deps --no-out-link)"
