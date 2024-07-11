@@ -22,5 +22,5 @@ callPackage ../base.nix rec {
   '';
 
   checkTargets = [ "check-${targetName}" ];
-  hardeningDisable = [ "fortify" ]; # Prevent `error: "Assumed value of MB_LEN_MAX wrong"`
+  # hardeningDisable = [ "fortify" ]; # Prevent `error: "Assumed value of MB_LEN_MAX wrong"`
 }
