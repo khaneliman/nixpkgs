@@ -52,7 +52,7 @@ callPackage ../base.nix rec {
 
     # We can run these
     substituteInPlace ../compiler-rt/test/CMakeLists.txt \
-      --replace "endfunction()" "endfunction()''\nadd_subdirectory(builtins)''\nadd_subdirectory(shadowcallstack)"
+      --replace-fail "endfunction()" "endfunction()''\nadd_subdirectory(builtins)''\nadd_subdirectory(shadowcallstack)"
 
     # Could not launch llvm-config in /build/source/runtimes/build/bin
     mkdir -p build/bin
