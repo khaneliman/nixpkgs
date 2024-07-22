@@ -1,25 +1,32 @@
-{ lib
-, glib
-, cairo
-, libuuid
-, pango
-, gtk3
-, stdenv
-, fetchurl
-, autoPatchelfHook
+{
+  lib,
+  glib,
+  cairo,
+  libuuid,
+  pango,
+  gtk3,
+  stdenv,
+  fetchurl,
+  autoPatchelfHook,
 }:
 
-stdenv.mkDerivation (finalAttrs:  {
+stdenv.mkDerivation (finalAttrs: {
   pname = "libsciter";
   version = "4.4.8.23-bis"; # Version specified in GitHub commit title
 
-  src = finalAttrs.passthru.sources.${stdenv.hostPlatform.system} or (throw "Unsupported platform for libsciter: ${stdenv.hostPlatform.system}");
+  src =
+    finalAttrs.passthru.sources.${stdenv.hostPlatform.system}
+      or (throw "Unsupported platform for libsciter: ${stdenv.hostPlatform.system}");
 
-  nativeBuildInputs = [
-    autoPatchelfHook
+  nativeBuildInputs = [ autoPatchelfHook ];
+
+  buildInputs = [
+    glib
+    cairo
+    libuuid
+    pango
+    gtk3
   ];
-
-  buildInputs = [ glib cairo libuuid pango gtk3 ];
 
   dontUnpack = true;
 
@@ -56,7 +63,12 @@ stdenv.mkDerivation (finalAttrs:  {
   meta = with lib; {
     homepage = "https://sciter.com";
     description = "Embeddable HTML/CSS/JavaScript engine for modern UI development";
-    platforms = [ "x86_64-linux" "aarch64-linux" "aarch64-darwin" "x86_64-darwin" ];
+    platforms = [
+      "x86_64-linux"
+      "aarch64-linux"
+      "aarch64-darwin"
+      "x86_64-darwin"
+    ];
     maintainers = with maintainers; [ leixb ];
     sourceProvenance = with sourceTypes; [ binaryNativeCode ];
     license = licenses.unfree;
