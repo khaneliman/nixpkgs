@@ -16,36 +16,41 @@
   yabai,
 }:
 let
-  inherit (darwin.apple_sdk_11_0.frameworks)
+  inherit (darwin.apple_sdk.frameworks)
     Carbon
     Cocoa
     ScriptingBridge
     SkyLight
     ;
 
-  stdenv' = if stdenv.isDarwin then overrideSDK stdenv "11.0" else stdenv;
+  stdenv' = overrideSDK stdenv {
+    darwinMinVersion = "11.0";
+    darwinSdkVersion = "12.3";
+  };
 in
 stdenv'.mkDerivation (finalAttrs: {
   pname = "yabai";
-  version = "7.1.1";
+  version = "8.0.0";
 
-  src =
-    finalAttrs.passthru.sources.${stdenv.hostPlatform.system}
-      or (throw "Unsupported system: ${stdenv.hostPlatform.system}");
+  src = fetchFromGitHub {
+    owner = "koekeishiya";
+    repo = "yabai";
+    rev = "cee556de6c98f7647aa866c43e504cdb44be793e";
+    hash = "sha256-boxkPbeGO+wgDtmIVcR3sxOcOmickxrn2r7cAqCPepI=";
+  };
 
   env = {
     # silence service.h error
     NIX_CFLAGS_COMPILE = "-Wno-implicit-function-declaration";
   };
 
-  nativeBuildInputs =
-    [ installShellFiles ]
-    ++ lib.optionals stdenv.isx86_64 [
-      xcodebuild
-      xxd
-    ];
+  nativeBuildInputs = [
+    installShellFiles
+    xcodebuild
+    xxd
+  ];
 
-  buildInputs = lib.optionals stdenv.isx86_64 [
+  buildInputs = [
     Carbon
     Cocoa
     ScriptingBridge
@@ -53,7 +58,6 @@ stdenv'.mkDerivation (finalAttrs: {
   ];
 
   dontConfigure = true;
-  dontBuild = stdenv.isAarch64;
   enableParallelBuilding = true;
 
   installPhase = ''
@@ -68,42 +72,20 @@ stdenv'.mkDerivation (finalAttrs: {
     runHook postInstall
   '';
 
-  postPatch =
-    lib.optionalString stdenv.isx86_64 # bash
-      ''
-        # aarch64 code is compiled on all targets, which causes our Apple SDK headers to error out.
-        # Since multilib doesn't work on darwin i dont know of a better way of handling this.
-        substituteInPlace makefile \
-        --replace "-arch arm64e" "" \
-        --replace "-arch arm64" "" \
-        --replace "clang" "${stdenv.cc.targetPrefix}clang"
-
-        # `NSScreen::safeAreaInsets` is only available on macOS 12.0 and above, which frameworks aren't packaged.
-        # When a lower OS version is detected upstream just returns 0, so we can hardcode that at compile time.
-        # https://github.com/koekeishiya/yabai/blob/v4.0.2/src/workspace.m#L109
-        substituteInPlace src/workspace.m \
-        --replace 'return screen.safeAreaInsets.top;' 'return 0;'
-      '';
+  postPatch = # bash
+    ''
+      # aarch64 code is compiled on all targets, which causes our Apple SDK headers to error out.
+      # Since multilib doesn't work on darwin i dont know of a better way of handling this.
+      substituteInPlace makefile \
+      --replace-fail "-arch arm64e" "" \
+      --replace-fail '-arch ${if stdenv.isAarch64 then "x86_64" else "arm64"}' ""
+      # --replace-fail "clang" "${stdenv.cc.targetPrefix}clang"
+    '';
 
   passthru = {
     tests.version = testers.testVersion {
       package = yabai;
       version = "yabai-v${finalAttrs.version}";
-    };
-
-    sources = {
-      # Unfortunately compiling yabai from source on aarch64-darwin is a bit complicated. We use the precompiled binary instead for now.
-      # See the comments on https://github.com/NixOS/nixpkgs/pull/188322 for more information.
-      "aarch64-darwin" = fetchzip {
-        url = "https://github.com/koekeishiya/yabai/releases/download/v${finalAttrs.version}/yabai-v${finalAttrs.version}.tar.gz";
-        hash = "sha256-LNOAT1vm6EEmcKdshMKjYWFfoRoRNbgZgjEpOTacWc8=";
-      };
-      "x86_64-darwin" = fetchFromGitHub {
-        owner = "koekeishiya";
-        repo = "yabai";
-        rev = "v${finalAttrs.version}";
-        hash = "sha256-dznMjSaS2kkyYf7JrNf1Y++Nb5YFOmk/JQP3BBrf5Bk=";
-      };
     };
 
     updateScript = writeShellScript "update-yabai" ''
@@ -137,15 +119,13 @@ stdenv'.mkDerivation (finalAttrs: {
     homepage = "https://github.com/koekeishiya/yabai";
     changelog = "https://github.com/koekeishiya/yabai/blob/v${finalAttrs.version}/CHANGELOG.md";
     license = lib.licenses.mit;
-    platforms = builtins.attrNames finalAttrs.passthru.sources;
+    platforms = lib.platforms.darwin;
     mainProgram = "yabai";
     maintainers = with lib.maintainers; [
       cmacrae
       shardy
       khaneliman
     ];
-    sourceProvenance =
-      with lib.sourceTypes;
-      lib.optionals stdenv.isx86_64 [ fromSource ] ++ lib.optionals stdenv.isAarch64 [ binaryNativeCode ];
+    sourceProvenance = [ lib.sourceTypes.fromSource ];
   };
 })
