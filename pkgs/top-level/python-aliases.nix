@@ -49,6 +49,7 @@ mapAliases ({
   ansible-doctor = throw "ansible-doctor has been promoted to a top-level attribute name: `pkgs.ansible-doctor`"; # Added 2023-05-16
   ansible-later = throw "ansible-later has been promoted to a top-level attribute name: `pkgs.ansible-later`"; # Added 2023-05-16
   ansible-lint = throw "ansible-lint has been promoted to a top-level attribute name: `pkgs.ansible-lint`"; # Added 2023-05-16
+  ansible-navigator = throw "ansible-navigator has been promoted to a top-level attribute name: pkgs.ansible-navigator"; # Added 2024-08-07
   anyjson = throw "anyjson has been removed, it was using setuptools 2to3 translation feature, which has been removed in setuptools 58"; # added 2022-01-18
   apache-airflow = throw "apache-airflow has been moved out of pythonPackages and is available as a standalone package"; # added 2023-06-05
   argon2_cffi = argon2-cffi; # added 2022-05-09
@@ -327,6 +328,7 @@ mapAliases ({
   net2grid = gridnet; # add 2022-04-22
   nghttp2 = throw "in 1.52.0 removed deprecated python bindings."; # added 2023-06-08
   ninja-python = ninja; # add 2022-08-03
+  nose3 = throw "nose3 has been removed since it is unmaintained and does not work with Python 3.12"; # added 2024-07-28
   nosejs = throw "nosejs has been removed since it has not been maintained for 15 years and there are no dependent packages"; # added 2024-05-21
   nose-cov = throw "nose-cov has been removed, it was archived and unmaintained since 2012"; # added 2024-05-21
   nosexcover = throw "nosexcover has been removed since it has not been maintained and there are no dependent packages"; # added 2024-05-21
@@ -336,8 +338,10 @@ mapAliases ({
   nose-randomly = throw "nose-randomly has been removed, it was archived and unmaintained since 2019"; # added 2024-05-22
   nose-pattern-exclude = throw "nose-pattern-exclude has been removed as it has been unmaintained since 2014"; # added 2024-07-27
   nose_progressive = throw "nose_progressive has been removed, it was using setuptools 2to3 translation feature, which has been removed in setuptools 58"; #added 2023-02-21
+  nose-timer = throw "nose-timer has been removed as it depends on the abandoned nose test framework"; # added 2024-07-27
   nose-warnings-filters = throw "nose-warnings-filters has been removed as it has been unmaintained since 2016"; # added 2024-07-27
   nose_warnings_filters = nose-warnings-filters; # added 2024-01-07
+  nose-xunitmp = throw "nose-xunitmp has been removed as it depends on the abandoned nose test framework"; # added 2024-07-29
   notifymuch = throw "notifymuch has been promoted to a top-level attribute name: `pkgs.notifymuch`"; # added 2022-10-02
   Nuitka = nuitka; # added 2023-02-19
   ntlm-auth = throw "ntlm-auth has been removed, because it relies on the md4 implementation provided by openssl. Use pyspnego instead.";
@@ -358,6 +362,7 @@ mapAliases ({
   pdfposter = throw "pdfposter was promoted to a top-level attribute"; # Added 2023-06-29
   pdfminer = pdfminer-six; # added 2022-05-25
   pep257 = pydocstyle; # added 2022-04-12
+  pkutils = throw "pkutils was removed as it was unused and is not applicable to modern Python build tools"; # added 2024-07-28
   poetry = throw "poetry was promoted to a top-level attribute, use poetry-core to build Python packages"; # added 2023-01-09
   poetry2conda = throw "poetry2conda was promoted to a top-level attribute"; # Added 2022-10-02
   Polygon3 = polygon3; # Added 2023-08-08
@@ -479,6 +484,7 @@ mapAliases ({
   pytorchWithoutCuda = torchWithoutCuda; # added 2022-09-30
   pytwitchapi = twitchapi; # added 2022-03-07
   pyuavcan = throw "pyuavcan has been renamed to pycyphal and the old package deprecated, use pycyphal instead"; # added 2024-02-09
+  pyutilib = throw "pyutilib has been removed, since it is no longer maintained"; # added 2024-07-28
   pyvcf = throw "pyvcf has been removed, it was using setuptools 2to3 translation feature, which has been removed in setuptools 58"; # added 2023-05-19
   PyVirtualDisplay = pyvirtualdisplay; # added 2023-02-19
   pywick = throw "pywick has been removed, since it is no longer maintained"; # added 2023-07-01
@@ -494,6 +500,7 @@ mapAliases ({
   radicale_infcloud = radicale-infcloud; # added 2024-01-07
   radio_beam = radio-beam; # added 2023-11-04
   ratelimiter = throw "ratelimiter has been removed, since it is unmaintained and broken"; # added 2023-10-21
+  rauth = throw "rauth has beed removed, since it is unmaintained upstream"; # added 2024-07-27
   rdflib-jsonld = throw "rdflib-jsonld is not compatible with rdflib 6"; # added 2021-11-05
   readme_renderer = readme-renderer; # added 2024-01-07
   recaptcha_client = throw "recaptcha_client has been removed since it is no longer maintained"; # added 2023-10-20
@@ -520,6 +527,7 @@ mapAliases ({
   ruamel_yaml_clib = ruamel-yaml-clib; # added 2021-11-01
   inherit (super.pkgs) ruff-lsp; # added 2023-06-23
   runway-python = throw "SDK has been deprecated and was archived by upstream"; # added 2023-05-03
+  safe = throw "safe has been removed, it was unmaintained sinced October 2019"; # added 2024-07-28
   sampledata = throw "sampledata has been removed, it was unmaintained since 2017"; # added 2024-07-27
   sapi-python-client = kbcstorage; # added 2022-04-20
   scikitimage = scikit-image; # added 2023-05-14
@@ -560,6 +568,7 @@ mapAliases ({
   suds-jurko = throw "suds-jurko has been removed, it was using setuptools 2to3 translation feature, which has been removed in setuptools 58"; # added 2023-02-27
   supervise_api = supervise-api; # added 2023-10-11
   suseapi = throw "suseapi has been removed because it is no longer maintained"; # added 2023-02-27
+  synologydsm-api = py-synologydsm-api; # added 2024-07-29
   sysv_ipc = sysv-ipc; # added 2024-01-07
   tensorflow-bin_2 = tensorflow-bin; # added 2021-11-25
   tensorflow-build_2 = tensorflow-build; # added 2021-11-25
@@ -598,6 +607,7 @@ mapAliases ({
   update_checker = update-checker; # added 2024-01-07
   uproot3 = throw "uproot3 has been removed, use uproot instead"; # added 2022-12-13
   uproot3-methods = throw "uproot3-methods has been removed"; # added 2022-12-13
+  urwid-mitmproxy-mitmproxy = throw "urwid-mitmproxy has been removed because mitmproxy no longer uses it"; # Added 2024-07-26
   uuid = throw "uuid is a Python standard module"; # added 2024-04-18
   validictory = throw "validictory has been removed, since it abandoned"; # added 2023-07-07
   vega_datasets = vega-datasets; # added 2023-11-04
@@ -609,6 +619,7 @@ mapAliases ({
   weakrefmethod = throw "weakrefmethod was removed since it's not needed in Python >= 3.4"; # added 2022-12-01
   webapp2 = throw "webapp2 is unmaintained since 2012"; # added 2022-05-29
   weboob = throw "weboob has been removed, please use woob instead"; # added 2024-07-27
+  webhelpers = throw "webhelpers has been removed because it is unmaintained and upstream is gone"; # added 2024-07-27
   websocket_client = websocket-client; # added 2021-06-15
   word2vec = throw "word2vec has been removed because it is abandoned"; # added 2023-05-22
   wxPython_4_0 = throw "wxPython_4_0 has been removed, use wxpython instead"; # added 2023-03-19

@@ -17,6 +17,7 @@
 , # Misc dependencies
   arrow-cpp
 , Cocoa
+, coc-diagnostic
 , code-minimap
 , dasht
 , deno
@@ -336,6 +337,11 @@
     dependencies = with self; [ nvim-cmp zsh ];
   };
 
+  coc-diagnostic = buildVimPlugin {
+    inherit (coc-diagnostic) pname version meta;
+    src = "${coc-diagnostic}/lib/node_modules/coc-diagnostic";
+  };
+
   coc-nginx = buildVimPlugin {
     pname = "coc-nginx";
     inherit (nodePackages."@yaegassy/coc-nginx") version meta;
@@ -418,12 +424,12 @@
 
   codesnap-nvim =
     let
-      version = "1.5.2";
+      version = "1.6.0";
       src = fetchFromGitHub {
         owner = "mistricky";
         repo = "codesnap.nvim";
         rev = "refs/tags/v${version}";
-        hash = "sha256-r6/2pbojfzBdMoZHphE6BX5cEiCAmOWurPBptI6jjcw=";
+        hash = "sha256-3z0poNmS6LOS7/qGTBhvz1Q9WpYC7Wu4rNvHsUXB5ZY=";
       };
       codesnap-lib = rustPlatform.buildRustPackage {
         pname = "codesnap-lib";
@@ -431,7 +437,7 @@
 
         sourceRoot = "${src.name}/generator";
 
-        cargoHash = "sha256-E8EywpyRSoknXSebnvqP178ZgAIahJeD5siD46KM/Mc=";
+        cargoHash = "sha256-u0NvChN50LIxUhmsT4mvWs5xB/TwJkMabggFePA/b1E=";
 
         nativeBuildInputs = [
           pkg-config
@@ -564,7 +570,7 @@
         pname = "cord.nvim-rust";
         inherit version src;
 
-        cargoSha256 = "sha256-6FYf4pHEPxvhKHHPmkjQ40zPxaiypnpDxF8kNH+h+tg=";
+        cargoHash = "sha256-6FYf4pHEPxvhKHHPmkjQ40zPxaiypnpDxF8kNH+h+tg=";
 
         installPhase = let
           cargoTarget = stdenv.hostPlatform.rust.cargoShortTarget;
@@ -928,7 +934,7 @@
         inherit version;
         src = LanguageClient-neovim-src;
 
-        cargoSha256 = "H34UqJ6JOwuSABdOup5yKeIwFrGc83TUnw1ggJEx9o4=";
+        cargoHash = "sha256-H34UqJ6JOwuSABdOup5yKeIwFrGc83TUnw1ggJEx9o4=";
         buildInputs = lib.optionals stdenv.isDarwin [ CoreServices ];
 
         # FIXME: Use impure version of CoreFoundation because of missing symbols.
@@ -1235,7 +1241,7 @@
         inherit (old) version src;
         sourceRoot = "${old.src.name}/spectre_oxi";
 
-        cargoHash = "sha256-J9L9j8iyeZQRMjiVqdI7V7BOAkZaiLGOtKDpgq2wyi0=";
+        cargoHash = "sha256-D7KUJ8q521WWgUqBBOgepGJ3NQ4DdKr+Bg/4k3Lf+mw=";
 
         preCheck = ''
           mkdir tests/tmp/
@@ -1437,12 +1443,12 @@
 
   sniprun =
     let
-      version = "1.3.14";
+      version = "1.3.15";
       src = fetchFromGitHub {
         owner = "michaelb";
         repo = "sniprun";
         rev = "refs/tags/v${version}";
-        hash = "sha256-9vglmQ9sy0aCbj4H81ublHclpoSfOA7ss5CNdoX54sY=";
+        hash = "sha256-8N+KUawQ6RI6sG8m9wpvJTMQyJ5j/43PRkrTPrWAREQ=";
       };
       sniprun-bin = rustPlatform.buildRustPackage {
         pname = "sniprun-bin";
@@ -1452,7 +1458,7 @@
           darwin.apple_sdk.frameworks.Security
         ];
 
-        cargoHash = "sha256-p4rZBgB3xQC14hRRTjNZT1G1gbaKydlKu6MYNSLk6iA=";
+        cargoHash = "sha256-bLki+6uMKJtk/bu+LNf2E1m/HpEG8zmnM3JI89IjmNs=";
 
         nativeBuildInputs = [ makeWrapper ];
 
@@ -1901,7 +1907,7 @@
       vim-markdown-composer-bin = rustPlatform.buildRustPackage {
         pname = "vim-markdown-composer-bin";
         inherit (super.vim-markdown-composer) src version;
-        cargoSha256 = "sha256-Vie8vLTplhaVU4E9IohvxERfz3eBpd62m8/1Ukzk8e4=";
+        cargoHash = "sha256-Vie8vLTplhaVU4E9IohvxERfz3eBpd62m8/1Ukzk8e4=";
         # tests require network access
         doCheck = false;
       };
@@ -2118,7 +2124,6 @@
       "coc-clangd"
       "coc-cmake"
       "coc-css"
-      "coc-diagnostic"
       "coc-docker"
       "coc-emmet"
       "coc-eslint"
