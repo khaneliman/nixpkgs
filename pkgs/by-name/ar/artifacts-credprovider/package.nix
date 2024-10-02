@@ -20,7 +20,8 @@ buildDotnetModule rec {
 
   projectFile = "CredentialProvider.Microsoft/CredentialProvider.Microsoft.csproj";
 
-  nugetDeps = ./deps.nix;
+  # nugetDeps = ./deps.nix;
+  nugetHash = "sha256-UoDsZH6GiaPMciNOS/2FmulRQ+t4Df3blOSt+VcJ96k=";
 
   dotnet-sdk = dotnetCorePackages.sdk_6_0;
 
