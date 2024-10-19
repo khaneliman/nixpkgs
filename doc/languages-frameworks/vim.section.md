@@ -232,6 +232,19 @@ To add a new plugin, run `nix-shell -p vimPluginsUpdater --run 'vim-plugins-upda
 
 Finally, there are some plugins that are also packaged in nodePackages because they have Javascript-related build steps, such as running webpack. Those plugins are not listed in `vim-plugin-names` or managed by `vimPluginsUpdater` at all, and are included separately in `overrides.nix`. Currently, all these plugins are related to the `coc.nvim` ecosystem of the Language Server Protocol integration with Vim/Neovim.
 
+### Testing plugins {#testing-vim-plugins}
+
+A good way to identify required dependencies, and prevent surprise breaking changes, is by running Neovim and requiring the plugin to watch for runtime errors.
+
+This is easily achieved through `nvimRequireCheck` in the [overrides.nix](https://github.com/NixOS/nixpkgs/blob/master/pkgs/applications/editors/vim/plugins/overrides.nix).
+
+```nix
+  gitsigns-nvim = super.gitsigns-nvim.overrideAttrs {
+    dependencies = with self; [ plenary-nvim ];
+    nvimRequireCheck = "gitsigns";
+  };
+```
+
 ### Plugin optional configuration {#vim-plugin-required-snippet}
 
 Some plugins require specific configuration to work. We choose not to
