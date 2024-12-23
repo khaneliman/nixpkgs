@@ -2312,20 +2312,17 @@ in
       htop
       openscad
     ];
+    runtimeDeps = [
+      zathura
+      htop
+      openscad
+    ];
 
     # FIXME: cant find plugin root dir
     nvimSkipModule = [
       "openscad"
       "openscad.snippets.openscad"
       "openscad.utilities"
-    ];
-    patches = [
-      (substituteAll {
-        src = ./patches/openscad.nvim/program_paths.patch;
-        htop = lib.getExe htop;
-        openscad = lib.getExe openscad;
-        zathura = lib.getExe zathura;
-      })
     ];
   };
 
