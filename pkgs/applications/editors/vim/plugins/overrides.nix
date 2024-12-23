@@ -2479,12 +2479,7 @@ in
   };
 
   aider-nvim = super.aider-nvim.overrideAttrs {
-    patches = [ ./patches/aider.nvim/fix-paths.patch ];
-
-    postPatch = ''
-      substituteInPlace lua/aider.lua --replace '@aider@' ${aider-chat}/bin/aider
-      substituteInPlace lua/helpers.lua --replace '@aider@' ${aider-chat}/bin/aider
-    '';
+    runtimeDeps = [ aider-chat ];
     nvimRequireCheck = "aider";
   };
 
