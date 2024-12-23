@@ -2474,11 +2474,7 @@ in
   };
 
   ranger-nvim = super.ranger-nvim.overrideAttrs {
-    patches = [ ./patches/ranger.nvim/fix-paths.patch ];
-
-    postPatch = ''
-      substituteInPlace lua/ranger-nvim.lua --replace '@ranger@' ${ranger}/bin/ranger
-    '';
+    runtimeDeps = [ ranger ];
     nvimRequireCheck = "ranger-nvim";
   };
 
