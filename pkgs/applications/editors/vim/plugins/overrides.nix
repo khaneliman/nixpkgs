@@ -187,12 +187,7 @@ in
   avante-nvim = callPackage ./avante-nvim { };
 
   aw-watcher-vim = super.aw-watcher-vim.overrideAttrs {
-    patches = [
-      (substituteAll {
-        src = ./patches/aw-watcher-vim/program_paths.patch;
-        curl = lib.getExe curl;
-      })
-    ];
+    runtimeDeps = [ curl ];
   };
 
   bamboo-nvim = super.bamboo-nvim.overrideAttrs {
