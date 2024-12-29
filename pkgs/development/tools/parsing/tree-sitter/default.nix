@@ -30,13 +30,12 @@ let
   # 3) Set GITHUB_TOKEN env variable to avoid api rate limit (Use a Personal Access Token from https://github.com/settings/tokens It does not need any permissions)
   # 4) run the ./result script that is output by that (it updates ./grammars)
   version = "0.24.6";
-  hash = "sha256-L7F2/S22knqEdB2hxfqLe5Tcgk0WQqBdFQ7BvHFl4EI=";
 
   src = fetchFromGitHub {
     owner = "tree-sitter";
     repo = "tree-sitter";
     tag = "v${version}";
-    inherit hash;
+    hash = "sha256-L7F2/S22knqEdB2hxfqLe5Tcgk0WQqBdFQ7BvHFl4EI=";
     fetchSubmodules = true;
   };
 
@@ -194,13 +193,15 @@ rustPlatform.buildRustPackage {
 
   postPatch = lib.optionalString (!webUISupport) ''
     # remove web interface
-    sed -e '/pub mod playground/d' \
-        -i cli/src/lib.rs
-    sed -e 's/playground,//' \
-        -e 's/playground::serve(&grammar_path.*$/println!("ERROR: web-ui is not available in this nixpkgs build; enable the webUISupport"); std::process::exit(1);/' \
-        -i cli/src/main.rs
-    sed -e 's/playground::serve(.*$/println!("ERROR: web-ui is not available in this nixpkgs build; enable the webUISupport"); std::process::exit(1);/' \
-        -i cli/src/main.rs
+    substituteInPlace cli/src/lib.rs \
+      --replace-fail "pub mod playground" ""
+
+    substituteInPlace cli/src/main.rs \
+      --replace-fail "playground," "" \
+      --replace-fail 'playground::serve(&grammar_path.*$' 'println!("ERROR: web-ui is not available in this nixpkgs build; enable the webUISupport"); std::process::exit(1);'
+
+    substituteInPlace cli/src/main.rs \
+      --replace-fail 'playground::serve(.*$' 'println!("ERROR: web-ui is not available in this nixpkgs build; enable the webUISupport"); std::process::exit(1);'
   '';
 
   # Compile web assembly with emscripten. The --debug flag prevents us from
