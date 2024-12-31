@@ -9,19 +9,19 @@
   vimUtils,
 }:
 let
-  version = "1.1.0-unstable-2024-12-15";
+  version = "1.1.0";
   src = fetchFromGitHub {
     owner = "sourcegraph";
     repo = "sg.nvim";
-    rev = "7c423ebeb028b3534eb20fe54972825384dbe7d6";
-    hash = "sha256-ALAYX/1MTk0fCA8THunoHz8QTlWkg+pgiSp2n3B4KrU=";
+    tag = "v${version}";
+    hash = "sha256-Kxp5bAMjxgiLStN8ofiSLMgfZIRKGD+8mVxXU76mR6U=";
   };
 
   sg-nvim-rust = rustPlatform.buildRustPackage {
     pname = "sg-nvim-rust";
     inherit version src;
 
-    cargoHash = "sha256-t0+0Zw8NjCD1VB1hTrSjOa1130IVanoTALdFoTloFe4=";
+    cargoHash = "sha256-2Xgz2FMSxJrgE0lKvEfecgU40iIwpWZFJ1YDeeA1HE0=";
 
     nativeBuildInputs = [ pkg-config ];
 
@@ -52,7 +52,6 @@ vimUtils.buildVimPlugin {
 
   passthru = {
     updateScript = nix-update-script {
-      extraArgs = [ "--version=branch" ];
       attrPath = "vimPlugins.sg-nvim.sg-nvim-rust";
     };
 
