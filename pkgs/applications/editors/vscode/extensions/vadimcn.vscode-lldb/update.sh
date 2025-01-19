@@ -19,8 +19,8 @@ if [[ $# -ne 1 ]]; then
     # no version specified, find the newest one
     version=$(
         curl -sL "https://api.github.com/repos/$owner/$repo/releases" |
-        jq 'map(select(.prerelease | not)) | .[0].tag_name' --raw-output |
-        sed 's/[\"v]//'
+            jq 'map(select(.prerelease | not)) | .[0].tag_name' --raw-output |
+            sed 's/[\"v]//'
     )
 fi
 old_version=$(sed -nE 's/.*\bversion = "(.*)".*/\1/p' ./default.nix)
@@ -33,15 +33,14 @@ fi
 echo "$old_version -> $version"
 
 # update hashes
-sed -E 's/\bversion = ".*?"/version = "'$version'"/' --in-place "$nixFile"
+sed -E 's/\bversion = ".*?"/version = "'"$version"'"/' --in-place "$nixFile"
 srcHash=$(nix-prefetch-github vadimcn vscode-lldb --rev "v$version" | jq --raw-output .hash)
-sed -E 's#\bhash = ".*?"#hash = "'$srcHash'"#' --in-place "$nixFile"
+sed -E 's#\bhash = ".*?"#hash = "'"$srcHash"'"#' --in-place "$nixFile"
 cargoHash=$(nix-prefetch "{ sha256 }: (import $nixpkgs {}).vscode-extensions.vadimcn.vscode-lldb.adapter.cargoDeps.overrideAttrs (_: { outputHash = sha256; })")
-sed -E 's#\bcargoHash = ".*?"#cargoHash = "'$cargoHash'"#' --in-place "$nixFile"
+sed -E 's#\bcargoHash = ".*?"#cargoHash = "'"$cargoHash"'"#' --in-place "$nixFile"
 
-pushd $TMPDIR
-curl -LO https://raw.githubusercontent.com/$owner/$repo/v${version}/package-lock.json
+pushd "$TMPDIR"
+curl -LO https://raw.githubusercontent.com/"$owner/$repo/v$version"/package-lock.json
 npmDepsHash=$(prefetch-npm-deps ./package-lock.json)
 popd
-sed -E 's#\bnpmDepsHash = ".*?"#npmDepsHash = "'$npmDepsHash'"#' --in-place "$nixFile"
-
+sed -E 's#\bnpmDepsHash = ".*?"#npmDepsHash = "'"$npmDepsHash"'"#' --in-place "$nixFile"

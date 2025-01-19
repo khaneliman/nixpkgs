@@ -4,7 +4,6 @@
   fetchFromGitHub,
   rustPlatform,
   makeWrapper,
-  llvmPackages,
   buildNpmPackage,
   cmake,
   nodejs,
@@ -17,7 +16,7 @@ assert lib.versionAtLeast python3.version "3.5";
 let
   publisher = "vadimcn";
   pname = "vscode-lldb";
-  version = "1.10.0";
+  version = "1.11.1";
 
   vscodeExtUniqueId = "${publisher}.${pname}";
   vscodeExtPublisher = publisher;
@@ -27,17 +26,13 @@ let
     owner = "vadimcn";
     repo = "vscode-lldb";
     rev = "v${version}";
-    hash = "sha256-ExSS5HxDmJJtYypRYJNz7nY0D50gjoDBc4CnJMfgVw8=";
+    hash = "sha256-b063cCuiDpaeSSWxY0sbKsZucY7BCxI5s+35soJRFFQ=";
   };
-
-  # need to build a custom version of lldb and llvm for enhanced rust support
-  lldb = (import ./lldb.nix { inherit fetchFromGitHub llvmPackages; });
 
   adapter = (
     import ./adapter.nix {
       inherit
         lib
-        lldb
         makeWrapper
         rustPlatform
         stdenv
@@ -145,7 +140,7 @@ stdenv.mkDerivation {
   '';
 
   passthru = {
-    inherit lldb adapter;
+    inherit adapter;
     updateScript = ./update.sh;
   };
 

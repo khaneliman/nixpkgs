@@ -13,7 +13,9 @@ rustPlatform.buildRustPackage {
   pname = "${pname}-adapter";
   inherit version src;
 
-  cargoHash = "sha256-e/Jki/4pCs0qzaBVR4iiUhdBFmWlTZYREQkuFSoWYFo=";
+  useFetchCargoVendor = true;
+
+  cargoHash = "sha256-HFu3u/DX+SOIwwgk7+2EbQZ1tp9yqaV1CxiCN1PgXwM=";
 
   buildInputs = lib.optionals stdenv.hostPlatform.isDarwin [ lldb ];
 
@@ -21,7 +23,7 @@ rustPlatform.buildRustPackage {
 
   env = lib.optionalAttrs stdenv.hostPlatform.isDarwin { NIX_LDFLAGS = "-llldb -lc++abi"; };
 
-  buildAndTestSubdir = "adapter";
+  buildAndTestSubdir = "adapter/codellbd";
 
   buildFeatures = [ "weak-linkage" ];
 
@@ -45,7 +47,7 @@ rustPlatform.buildRustPackage {
       --set-default LLDB_DEBUGSERVER_PATH "${lldb.out}/bin/lldb-server"
   '';
 
-  patches = [ ./patches/adapter-output-shared_object.patch ];
+  # patches = [ ./patches/adapter-output-shared_object.patch ];
 
   # Tests are linked to liblldb but it is not available here.
   doCheck = false;
