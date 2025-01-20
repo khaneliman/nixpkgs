@@ -13,9 +13,9 @@ discover_modules() {
         # Ignore certain infra directories
         if [[ "$lua_file" =~ debug/|scripts?/|tests?/|spec/ || "$lua_file" =~ .*\meta.lua ]]; then
             continue
-        # Ignore optional telescope and lualine modules
-        elif [[ "$lua_file" =~ ^lua/telescope/_extensions/(.+)\.lua || "$lua_file" =~ ^lua/lualine/(.+)\.lua ]]; then
-            continue
+        # # Ignore optional telescope and lualine modules
+        # elif [[ "$lua_file" =~ ^lua/telescope/_extensions/(.+)\.lua || "$lua_file" =~ ^lua/lualine/(.+)\.lua ]]; then
+        #     continue
         # Grab main module names
         elif [[ "$lua_file" =~ ^lua/([^/]+)/init.lua$ ]]; then
             echo "$lua_file"

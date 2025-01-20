@@ -127,9 +127,9 @@ in
 {
   aerial-nvim = super.aerial-nvim.overrideAttrs {
     # optional dependencies
-    nvimSkipModule = [
-      "lualine.components.aerial"
-      "telescope._extensions.aerial"
+    checkInputs = with self; [
+      lualine-nvim
+      telescope-nvim
     ];
   };
 
@@ -157,6 +157,15 @@ in
   astroui = super.astroui.overrideAttrs {
     # Readme states that astrocore is an optional dependency
     checkInputs = [ self.astrocore ];
+  };
+
+  astrotheme = super.astrotheme.overrideAttrs {
+    # Optional lualine theme
+    checkInputs = [ self.lualine-nvim ];
+    nvimSkipModule = [
+      # Requires config
+      "lualine.themes.astrotheme"
+    ];
   };
 
   asyncrun-vim = super.asyncrun-vim.overrideAttrs {
@@ -1602,6 +1611,13 @@ in
     dependencies = [ self.lualine-nvim ];
   };
 
+  lualine-nvim = super.lualine-nvim.overrideAttrs {
+    nvimSkipModule = [
+      # Requires pywal files in home dir
+      "lualine.themes.pywal"
+    ];
+  };
+
   luasnip = super.luasnip.overrideAttrs {
     dependencies = [ luaPackages.jsregexp ];
   };
@@ -2132,6 +2148,8 @@ in
   };
 
   nterm-nvim = super.nterm-nvim.overrideAttrs {
+    # Optional telescope extension
+    checkInputs = [ self.telescope-nvim ];
     dependencies = [ self.aniseed ];
   };
 
@@ -3961,3 +3979,49 @@ in
   in
   lib.genAttrs nodePackageNames nodePackage2VimPackage
 )
+
+# TODO:
+# nix build .#vimPlugins.cmake-tools-nvim
+# nix build .#vimPlugins.codecompanion-nvim
+# nix build .#vimPlugins.csharpls-extended-lsp-nvim
+# nix build .#vimPlugins.distant-nvim
+# nix build .#vimPlugins.flutter-tools-nvim
+# nix build .#vimPlugins.git-prompt-string-lualine-nvim
+# nix build .#vimPlugins.git-worktree-nvim
+# nix build .#vimPlugins.goto-preview
+# nix build .#vimPlugins.grapple-nvim
+# nix build .#vimPlugins.harpoon
+# nix build .#vimPlugins.harpoon2
+# nix build .#vimPlugins.jellybeans-nvim
+# nix build .#vimPlugins.jsonfly-nvim
+# nix build .#vimPlugins.kanagawa-nvim
+# nix build .#vimPlugins.lazygit-nvim
+# nix build .#vimPlugins.lean-nvim
+# nix build .#vimPlugins.lispdocs-nvim
+# nix build .#vimPlugins.noice-nvim
+# nix build .#vimPlugins.nvchad-ui
+# nix build .#vimPlugins.nvim-metals
+# nix build .#vimPlugins.nvim-navic
+# nix build .#vimPlugins.nvim-neoclip-lua
+# nix build .#vimPlugins.nvim-notify
+# nix build .#vimPlugins.onedark-nvim
+# nix build .#vimPlugins.overseer-nvim
+# nix build .#vimPlugins.package-info-nvim
+# nix build .#vimPlugins.persisted-nvim
+# nix build .#vimPlugins.pomo-nvim
+# nix build .#vimPlugins.projections-nvim
+# nix build .#vimPlugins.pywal-nvim
+# nix build .#vimPlugins.refactoring-nvim
+# nix build .#vimPlugins.remote-nvim-nvim
+# nix build .#vimPlugins.scope-nvim
+# nix build .#vimPlugins.srcery-vim
+# nix build .#vimPlugins.tailwind-tools-nvim
+# nix build .#vimPlugins.telescope-cheat-nvim
+# nix build .#vimPlugins.telescope-file-browser-nvim
+# nix build .#vimPlugins.telescope-fzf-native-nvim
+# nix build .#vimPlugins.telescope-project-nvim
+# nix build .#vimPlugins.telescope-sg
+# nix build .#vimPlugins.telescope-zf-native-nvim
+# nix build .#vimPlugins.telescope-zoxide
+# nix build .#vimPlugins.telescope_hoogle
+# nix build .#vimPlugins.text-case-nvim
