@@ -53,7 +53,7 @@ stdenv.mkDerivation rec {
   src = fetchFromGitHub {
     owner = "Chocobozzz";
     repo = "PeerTube";
-    rev = "refs/tags/v${version}";
+    tag = "v${version}";
     hash = "sha256-kPZcCJtnoqE1g0fAuM98IhuDy1E9QBDkFNWrWIpFIDA=";
   };
 
@@ -76,6 +76,9 @@ stdenv.mkDerivation rec {
     yarnLock = "${src}/apps/peertube-runner/yarn.lock";
     hash = "sha256-x5qFCprn8q0xC88HudLV7W53X1Nkbz3F52RMp2PxIu8=";
   };
+
+  # There are broken symlinks in the node_modules
+  dontCheckForBrokenSymlinks = true;
 
   outputs = [
     "out"

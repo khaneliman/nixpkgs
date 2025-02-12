@@ -23,11 +23,11 @@ buildPythonPackage rec {
   src = fetchFromGitHub {
     owner = "ndokter";
     repo = "dsmr_parser";
-    rev = "refs/tags/v${version}";
+    tag = "v${version}";
     hash = "sha256-NfleByW9MF7FS4n/cMv297382LucP6Z629CuA6chm20=";
   };
 
-  pythonRelaxDeps = [ "dlms-cosem" ];
+  pythonRelaxDeps = [ "dlms_cosem" ];
 
   build-system = [ setuptools ];
 

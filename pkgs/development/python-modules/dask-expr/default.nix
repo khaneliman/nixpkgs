@@ -13,7 +13,7 @@
   pyarrow,
 
   # checks
-  distributed,
+  jinja2,
   pytestCheckHook,
   xarray,
 }:
@@ -27,7 +27,7 @@ buildPythonPackage rec {
     owner = "dask";
     repo = "dask-expr";
     tag = "v${version}";
-    hash = "sha256-WvPdvsKorEnHqf+q26+0VbAEriv6CI1UsNhYPRcMu+A=";
+    hash = "sha256-t1vPlTxV5JYArg/a7CzPP13NHbstEoCgHRmd8Y9mDfA=";
   };
 
   postPatch = ''
@@ -49,7 +49,7 @@ buildPythonPackage rec {
   pythonImportsCheck = [ "dask_expr" ];
 
   nativeCheckInputs = [
-    distributed
+    jinja2
     pytestCheckHook
     xarray
   ];

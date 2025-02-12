@@ -1,6 +1,6 @@
 {
   fetchFromGitHub,
-  git,
+  gitMinimal,
   glibc,
   lib,
   makeWrapper,
@@ -8,19 +8,20 @@
   python3Packages,
   squashfsTools,
   stdenv,
+  writableTmpDirAsHomeHook,
 }:
 
 python3Packages.buildPythonApplication rec {
   pname = "snapcraft";
-  version = "8.5.1";
+  version = "8.6.1";
 
   pyproject = true;
 
   src = fetchFromGitHub {
     owner = "canonical";
     repo = "snapcraft";
-    rev = "refs/tags/${version}";
-    hash = "sha256-7kIVWbVj5qse3JIdlCvRtVUfSa/rSjn4e8HJdVY3sOA=";
+    tag = version;
+    hash = "sha256-SbxsgvDptkUl8gHAIrJvnzIPOh0/R81n8cgJWBH7BXQ=";
   };
 
   patches = [
@@ -28,11 +29,6 @@ python3Packages.buildPythonApplication rec {
     # path for LXD must be adjusted so that it's at the correct location for LXD
     # on NixOS. This patch will likely never be accepted upstream.
     ./lxd-socket-path.patch
-    # In certain places, Snapcraft expects an /etc/os-release file to determine
-    # host info which doesn't exist in our test environment. This is a
-    # relatively naive patch which helps the test suite pass - without it *many*
-    # of the tests fail. This patch will likely never be accepted upstream.
-    ./os-platform.patch
     # Snapcraft will try to inject itself as a snap *from the host system* into
     # the build system. This patch short-circuits that logic and ensures that
     # Snapcraft is installed on the build system from the snap store - because
@@ -117,6 +113,7 @@ python3Packages.buildPythonApplication rec {
   build-system = with python3Packages; [ setuptools ];
 
   pythonRelaxDeps = [
+    "craft-parts"
     "docutils"
     "jsonschema"
     "pygit2"
@@ -138,16 +135,12 @@ python3Packages.buildPythonApplication rec {
       pytestCheckHook
       responses
       setuptools
+      writableTmpDirAsHomeHook
     ]
     ++ [
-      git
+      gitMinimal
       squashfsTools
     ];
-
-  preCheck = ''
-    mkdir -p check-phase
-    export HOME="$(pwd)/check-phase"
-  '';
 
   pytestFlagsArray = [ "tests/unit" ];
 
@@ -170,6 +163,7 @@ python3Packages.buildPythonApplication rec {
     "test_lifecycle_write_component_metadata"
     "test_parse_info_integrated"
     "test_patch_elf"
+    "test_project_platform_unknown_name"
     "test_remote_builder_init"
     "test_setup_assets_remote_icon"
     "test_snap_command_fallback"

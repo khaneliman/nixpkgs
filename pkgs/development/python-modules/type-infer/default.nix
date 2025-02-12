@@ -48,6 +48,7 @@ buildPythonPackage rec {
   pythonRelaxDeps = [
     "psutil"
     "py3langid"
+    "numpy"
   ];
 
   build-system = [ poetry-core ];
@@ -86,5 +87,7 @@ buildPythonPackage rec {
     homepage = "https://github.com/mindsdb/type_infer";
     license = licenses.gpl3Only;
     maintainers = with maintainers; [ mbalatsko ];
+    # ModuleNotFoundError: No module named 'imghdr', unrelated
+    broken = true;
   };
 }

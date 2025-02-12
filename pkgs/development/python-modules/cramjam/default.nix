@@ -19,13 +19,13 @@ buildPythonPackage rec {
   src = fetchFromGitHub {
     owner = "milesgranger";
     repo = "pyrus-cramjam";
-    rev = "refs/tags/v${version}";
+    tag = "v${version}";
     hash = "sha256-1KD5/oZjfdXav1ZByQoyyiDSzbmY4VJsSJg/FtUFdDE=";
   };
 
-  cargoDeps = rustPlatform.fetchCargoTarball {
+  cargoDeps = rustPlatform.fetchCargoVendor {
     inherit src;
-    hash = "sha256-Bp7EtyuLdLUfU3yvouNVE42klfqYt9QOwt+iGe521yI=";
+    hash = "sha256-Gpj/LUCx/ivYlmxNJnEZr8caEfV4OaQwEPNjz7vobsw=";
   };
 
   buildAndTestSubdir = "cramjam-python";

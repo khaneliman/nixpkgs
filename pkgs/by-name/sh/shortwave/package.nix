@@ -23,6 +23,7 @@
   libshumate,
   libseccomp,
   lcms2,
+  nix-update-script,
 }:
 
 stdenv.mkDerivation rec {
@@ -37,10 +38,10 @@ stdenv.mkDerivation rec {
     sha256 = "sha256-W1eOMyiooDesI13lOze/JcxzhSSxYOW6FOY85NkVyps=";
   };
 
-  cargoDeps = rustPlatform.fetchCargoTarball {
+  cargoDeps = rustPlatform.fetchCargoVendor {
     inherit src;
     name = "${pname}-${version}";
-    hash = "sha256-O5K5aNcWwUYkaJbGzTzS3FdNbEsQsdliyi0YShw+6PU=";
+    hash = "sha256-vtQRt8/eWwMA1+tKULpStLR7E1+R7LkNutS2Joz7zeI=";
   };
 
   nativeBuildInputs = [
@@ -76,6 +77,10 @@ stdenv.mkDerivation rec {
       gst-plugins-good
       gst-plugins-bad
     ]);
+
+  passthru = {
+    updateScript = nix-update-script { };
+  };
 
   meta = {
     homepage = "https://gitlab.gnome.org/World/Shortwave";

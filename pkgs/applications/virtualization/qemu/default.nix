@@ -1,10 +1,10 @@
-{ lib, stdenv, fetchurl, fetchpatch, python3Packages, zlib, pkg-config, glib, overrideSDK, buildPackages
-, pixman, vde2, alsa-lib, flex, pcre2
-, bison, lzo, snappy, libaio, libtasn1, gnutls, nettle, curl, dtc, ninja, meson, perl
+{ lib, stdenv, fetchurl, fetchpatch, python3Packages, zlib, pkg-config, glib, buildPackages
+, pixman, vde2, alsa-lib, flex
+, bison, lzo, snappy, libaio, libtasn1, gnutls, curl, dtc, ninja, meson, perl
 , sigtool
 , makeWrapper, removeReferencesTo
 , attr, libcap, libcap_ng, socat, libslirp
-, apple-sdk_13, rez, setfile
+, apple-sdk_13, darwinMinVersionHook, rez, setfile
 , guestAgentSupport ? (with stdenv.hostPlatform; isLinux || isNetBSD || isOpenBSD || isSunOS || isWindows) && !minimal
 , numaSupport ? stdenv.hostPlatform.isLinux && !stdenv.hostPlatform.isAarch32 && !minimal, numactl
 , seccompSupport ? stdenv.hostPlatform.isLinux && !minimal, libseccomp
@@ -56,6 +56,11 @@ assert lib.assertMsg (xenSupport -> hostCpuTargets == [ "i386-softmmu" ]) "Xen s
 
 let
   hexagonSupport = hostCpuTargets == null || lib.elem "hexagon" hostCpuTargets;
+
+  # needed in buildInputs and depsBuildBuild
+  # check log for warnings eg: `warning: 'hv_vm_config_get_max_ipa_size' is only available on macOS 13.0`
+  # to indicate if min version needs to get bumped.
+  darwinSDK = [ apple-sdk_13 (darwinMinVersionHook "13") ];
 in
 
 stdenv.mkDerivation (finalAttrs: {
@@ -73,6 +78,7 @@ stdenv.mkDerivation (finalAttrs: {
   };
 
   depsBuildBuild = [ buildPackages.stdenv.cc ]
+    ++ lib.optionals stdenv.buildPlatform.isDarwin darwinSDK
     ++ lib.optionals hexagonSupport [ pkg-config ];
 
   nativeBuildInputs = [
@@ -88,11 +94,12 @@ stdenv.mkDerivation (finalAttrs: {
     ++ lib.optionals stdenv.hostPlatform.isDarwin [ sigtool rez setfile ]
     ++ lib.optionals (!userOnly) [ dtc ];
 
-  buildInputs = [ glib zlib ]
-    ++ lib.optionals (!minimal) [ dtc pixman vde2 lzo snappy libtasn1 gnutls nettle libslirp ]
+  # gnutls is required for crypto support (luks) in qemu-img
+  buildInputs = [ glib gnutls zlib ]
+    ++ lib.optionals (!minimal) [ dtc pixman vde2 lzo snappy libtasn1 libslirp ]
     ++ lib.optionals (!userOnly) [ curl ]
     ++ lib.optionals ncursesSupport [ ncurses ]
-    ++ lib.optionals stdenv.hostPlatform.isDarwin [ apple-sdk_13 ]
+    ++ lib.optionals stdenv.hostPlatform.isDarwin darwinSDK
     ++ lib.optionals seccompSupport [ libseccomp ]
     ++ lib.optionals numaSupport [ numactl ]
     ++ lib.optionals alsaSupport [ alsa-lib ]
@@ -160,6 +167,7 @@ stdenv.mkDerivation (finalAttrs: {
 
   configureFlags = [
     "--disable-strip" # We'll strip ourselves after separating debug info.
+    "--enable-gnutls" # auto detection only works when building with --enable-system
     (lib.enableFeature enableDocs "docs")
     (lib.enableFeature enableTools "tools")
     "--localstatedir=/var"
@@ -218,6 +226,9 @@ stdenv.mkDerivation (finalAttrs: {
     # injected by the pkgsStatic stdenv
     # <https://github.com/NixOS/nixpkgs/issues/83667>
     rm -f $out/nix-support/propagated-build-inputs
+  '' + lib.optionalString finalAttrs.separateDebugInfo ''
+    # HACK: remove broken symlink created by hook
+    rm -f $debug/lib/debug/s390-ccw.img
   '';
   preBuild = "cd build";
 

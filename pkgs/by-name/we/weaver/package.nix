@@ -1,9 +1,7 @@
 {
   lib,
-  stdenv,
   rustPlatform,
   fetchFromGitHub,
-  darwin,
   testers,
   weaver,
 }:
@@ -19,11 +17,8 @@ rustPlatform.buildRustPackage rec {
     hash = "sha256-FBf+X0Xs3Yr9Sk5v86f2N9WOyv/rW/RSGlAYJ6UCBGY=";
   };
 
-  cargoHash = "sha256-r7l6/xeClphOI9kz/r36P0tTNHmSTKDhRL6KTVZNmvk=";
-
-  buildInputs = lib.optionals stdenv.hostPlatform.isDarwin (
-    with darwin.apple_sdk_11_0.frameworks; [ SystemConfiguration ]
-  );
+  useFetchCargoVendor = true;
+  cargoHash = "sha256-rxBij00NQySBVK3lJSm5rWo4YUZZvxk6tnNUzCj75FQ=";
 
   checkFlags = [
     # Skip tests requiring network

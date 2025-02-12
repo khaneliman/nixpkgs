@@ -2,22 +2,34 @@
   lib,
   rustPlatform,
   fetchFromGitHub,
+  pkg-config,
+  openssl,
   testers,
   mago,
 }:
 
 rustPlatform.buildRustPackage rec {
   pname = "mago";
-  version = "0.0.9";
+  version = "0.0.18";
 
   src = fetchFromGitHub {
     owner = "carthage-software";
     repo = "mago";
     tag = version;
-    hash = "sha256-MeI2pya0K1W7tbEJU8VrT6b0wYlr9Q7MTi27+wHfJjg=";
+    hash = "sha256-QSb+5wlv8uFT2wTeJyfsz+vE4Kegqgi7Dqyl1KZU//U=";
   };
 
-  cargoHash = "sha256-LcY04XkTQHpixPPPs86OVO1ehPrcdynKmScgfWEU24Q=";
+  useFetchCargoVendor = true;
+  cargoHash = "sha256-XpLVe7ln3ZYs8HGE/52xI7op9ZGa4S5u419gE3nVgz0=";
+
+  env = {
+    # Get openssl-sys to use pkg-config
+    OPENSSL_NO_VENDOR = 1;
+  };
+
+  nativeBuildInputs = [ pkg-config ];
+
+  buildInputs = [ openssl ];
 
   passthru = {
     tests.version = testers.testVersion {

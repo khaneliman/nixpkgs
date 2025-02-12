@@ -30,21 +30,19 @@
 
 buildPythonPackage rec {
   pname = "craft-application";
-  version = "4.6.0";
+  version = "4.9.0";
   pyproject = true;
-
-  disabled = pythonOlder "3.10";
 
   src = fetchFromGitHub {
     owner = "canonical";
     repo = "craft-application";
-    rev = "refs/tags/${version}";
-    hash = "sha256-kDujv7iVUvPfP9g3Ofm0Vso+I6qKBOq9NlFpigd6+Tc=";
+    tag = version;
+    hash = "sha256-DprItAuGjw8AACeJDrIa6KIWLSyImuWI0qeROpPohtM=";
   };
 
   postPatch = ''
     substituteInPlace pyproject.toml \
-      --replace-fail "setuptools==75.2.0" "setuptools"
+      --replace-fail "setuptools==75.8.0" "setuptools"
   '';
 
   build-system = [ setuptools-scm ];
@@ -103,6 +101,10 @@ buildPythonPackage rec {
       "test_to_yaml_file"
       # Tests expecting pytest-time
       "test_monitor_builds_success"
+      # Temporary fix until new release to support Python 3.13
+      "test_grammar_aware_part_error"
+      "test_grammar_aware_part_error[part2]"
+      "test_grammar_aware_project_error[project0]"
     ]
     ++ lib.optionals stdenv.hostPlatform.isAarch64 [
       # These tests have hardcoded "amd64" strings which fail on aarch64
@@ -116,7 +118,7 @@ buildPythonPackage rec {
   meta = {
     description = "Basis for Canonical craft applications";
     homepage = "https://github.com/canonical/craft-application";
-    changelog = "https://github.com/canonical/craft-application/blob/${src.rev}/docs/reference/changelog.rst";
+    changelog = "https://github.com/canonical/craft-application/blob/${src.tag}/docs/reference/changelog.rst";
     license = lib.licenses.lgpl3Only;
     maintainers = with lib.maintainers; [ jnsgruk ];
     platforms = lib.platforms.linux;

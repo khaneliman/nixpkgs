@@ -309,6 +309,8 @@ let
         };
       };
 
+      anweber.vscode-httpyac = callPackage ./anweber.vscode-httpyac { };
+
       apollographql.vscode-apollo = buildVscodeMarketplaceExtension {
         mktplcRef = {
           name = "vscode-apollo";
@@ -1314,6 +1316,18 @@ let
         };
       };
 
+      dendron.adjust-heading-level = callPackage ./dendron.adjust-heading-level { };
+
+      dendron.dendron = callPackage ./dendron.dendron { };
+
+      dendron.dendron-markdown-preview-enhanced =
+        callPackage ./dendron.dendron-markdown-preview-enhanced
+          { };
+
+      dendron.dendron-paste-image = callPackage ./dendron.dendron-paste-image { };
+
+      dendron.dendron-snippet-maker = callPackage ./dendron.dendron-snippet-maker { };
+
       denoland.vscode-deno = buildVscodeMarketplaceExtension {
         mktplcRef = {
           name = "vscode-deno";
@@ -1669,6 +1683,22 @@ let
         };
         meta = {
           license = lib.licenses.mit;
+        };
+      };
+
+      egirlcatnip.adwaita-github-theme = buildVscodeMarketplaceExtension {
+        mktplcRef = {
+          name = "adwaita-github-theme";
+          publisher = "egirlcatnip";
+          version = "1.0.5";
+          hash = "sha256-OvonS6137ICRUV5Tx4gD3we8nrza6ZgnRSs2SxFiCjU=";
+        };
+        meta = {
+          description = "Adwaita VS Code theme with Github syntax highlighting";
+          downloadPage = "https://marketplace.visualstudio.com/items?itemName=egirlcatnip.adwaita-github-theme";
+          homepage = "https://github.com/egirlcatnip/adwaita-github-theme";
+          license = lib.licenses.gpl3;
+          maintainers = with lib.maintainers; [ thtrf ];
         };
       };
 
@@ -2087,8 +2117,9 @@ let
         mktplcRef = {
           publisher = "github";
           name = "copilot";
-          version = "1.251.0"; # compatible with vscode ^1.96
-          hash = "sha256-nv6lTPTPcggwMgO8a4KAF0W7gpou1399f/axnH0sS4s=";
+          # Verify which version is available with nix run nixpkgs#vsce -- show github.copilot --json
+          version = "1.266.1363"; # compatible with vscode ^1.96
+          hash = "sha256-paT/fZMIjSh7Bp4bBg4ZT/c1wVc0ecQLJxulSQZjRdg=";
         };
 
         meta = {
@@ -2105,8 +2136,8 @@ let
           publisher = "github";
           name = "copilot-chat";
           # Verify which version is available with nix run nixpkgs#vsce -- show github.copilot-chat --json
-          version = "0.24.2024121201"; # compatible with vscode ^1.96
-          hash = "sha256-v3wdodDzYalz927KqqpL4IqEqLRmx1CLWdGBvZgNmpE=";
+          version = "0.24.2025020602"; # latest compatible with vscode ^1.97
+          hash = "sha256-smeBJ+yEIdbBs1eiKlPFCpYrb/nAkpnGlT9pTNnCnBI=";
         };
         meta = {
           description = "GitHub Copilot Chat is a companion extension to GitHub Copilot that houses experimental chat features";
@@ -2365,6 +2396,22 @@ let
           homepage = "https://github.com/hediet/vscode-drawio";
           license = lib.licenses.gpl3Only;
           maintainers = [ lib.maintainers.themaxmur ];
+        };
+      };
+
+      hirse.vscode-ungit = buildVscodeMarketplaceExtension {
+        mktplcRef = {
+          name = "vscode-ungit";
+          publisher = "hirse";
+          version = "2.5.2";
+          hash = "sha256-0CFYL6rBecB8rNnk4IAtg03ZPdSJ9qxwnVdhdQedxsQ=";
+        };
+        meta = {
+          description = "Ungit in Visual Studio Code.";
+          downloadPage = "https://marketplace.visualstudio.com/items?itemName=Hirse.vscode-ungit";
+          homepage = "https://github.com/hirse/vscode-ungit";
+          license = lib.licenses.mit;
+          maintainers = [ lib.maintainers.therobot2105 ];
         };
       };
 
@@ -3079,6 +3126,8 @@ let
         };
       };
 
+      marus25.cortex-debug = callPackage ./marus25.cortex-debug { };
+
       matangover.mypy = buildVscodeMarketplaceExtension {
         mktplcRef = {
           name = "mypy";
@@ -3459,6 +3508,8 @@ let
           maintainers = [ lib.maintainers.amadejkastelic ];
         };
       };
+
+      ms-python.mypy-type-checker = callPackage ./ms-python.mypy-type-checker { };
 
       ms-python.python = callPackage ./ms-python.python { };
 
@@ -3891,8 +3942,6 @@ let
         };
       };
 
-      nvarner.typst-lsp = callPackage ./nvarner.typst-lsp { };
-
       ocamllabs.ocaml-platform = buildVscodeMarketplaceExtension {
         meta = {
           changelog = "https://marketplace.visualstudio.com/items/ocamllabs.ocaml-platform/changelog";
@@ -4008,6 +4057,8 @@ let
           license = lib.licenses.mit;
         };
       };
+
+      platformio.platformio-vscode-ide = callPackage ./platformio.platformio-vscode-ide { };
 
       pollywoggames.pico8-ls = buildVscodeMarketplaceExtension {
         mktplcRef = {
@@ -4215,8 +4266,8 @@ let
         mktplcRef = {
           name = "wikitext";
           publisher = "RoweWilsonFrederiskHolme";
-          version = "3.8.2";
-          hash = "sha256-rWifSoJSN37xPIaCQgPyXRz9tCX2Akahl/3CuqzXq94=";
+          version = "4.0.1";
+          hash = "sha256-DN7VRLr5IaqCdsbADriH0AuUODGL8OeZWbCSozQTboU=";
         };
         meta = {
           description = "Extension that helps users view and write MediaWiki's Wikitext files";
@@ -4270,6 +4321,8 @@ let
           license = lib.licenses.mit;
         };
       };
+
+      saoudrizwan.claude-dev = callPackage ./saoudrizwan.claude-dev { };
 
       sainnhe.gruvbox-material = buildVscodeMarketplaceExtension {
         mktplcRef = {
@@ -4493,7 +4546,7 @@ let
           description = "Visual Studio Code extension for SOPS support";
           downloadPage = "https://marketplace.visualstudio.com/items?itemName=signageos.signageos-vscode-sops";
           homepage = "https://github.com/signageos/vscode-sops";
-          license = lib.licenses.unfree;
+          license = lib.licenses.mit;
           maintainers = [ ];
         };
       };
@@ -5365,8 +5418,8 @@ let
         mktplcRef = {
           name = "vscode-icons";
           publisher = "vscode-icons-team";
-          version = "12.10.0";
-          hash = "sha256-GNDLuszuJN3P0V25F4gm7yUJsFEQgFMMPMTFLWLIvSo=";
+          version = "12.11.0";
+          hash = "sha256-RpuCHJBLqhAXAdvC0qGDUJIy5ww1yqlSb7hKwCALidM=";
         };
         meta = {
           description = "Bring real icons to your Visual Studio Code";
@@ -5571,8 +5624,8 @@ let
         mktplcRef = {
           name = "pretty-ts-errors";
           publisher = "yoavbls";
-          version = "0.5.4";
-          hash = "sha256-SMEqbpKYNck23zgULsdnsw4PS20XMPUpJ5kYh1fpd14=";
+          version = "0.6.1";
+          hash = "sha256-LvX21nEjgayNd9q+uXkahmdYwzfWBZOhQaF+clFUUF4=";
         };
         meta = {
           description = "Make TypeScript errors prettier and human-readable in VSCode";
