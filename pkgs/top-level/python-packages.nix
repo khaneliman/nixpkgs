@@ -1165,6 +1165,8 @@ self: super: with self; {
 
   ayla-iot-unofficial = callPackage ../development/python-modules/ayla-iot-unofficial { };
 
+  azure-ai-documentintelligence = callPackage ../development/python-modules/azure-ai-documentintelligence { };
+
   azure-appconfiguration = callPackage ../development/python-modules/azure-appconfiguration { };
 
   azure-applicationinsights = callPackage ../development/python-modules/azure-applicationinsights { };
@@ -2099,6 +2101,8 @@ self: super: with self; {
   capturer = callPackage ../development/python-modules/capturer { };
 
   carbon = callPackage ../development/python-modules/carbon { };
+
+  cardano-tools = callPackage ../development/python-modules/cardano-tools { };
 
   cardimpose = callPackage ../development/python-modules/cardimpose { };
 
@@ -4238,8 +4242,6 @@ self: super: with self; {
   enturclient = callPackage ../development/python-modules/enturclient { };
 
   enum34 = callPackage ../development/python-modules/enum34 { };
-
-  enum-compat = callPackage ../development/python-modules/enum-compat { };
 
   env-canada = callPackage ../development/python-modules/env-canada { };
 
@@ -6489,6 +6491,8 @@ self: super: with self; {
   iocapture = callPackage ../development/python-modules/iocapture { };
 
   iocextract = callPackage ../development/python-modules/iocextract { };
+
+  ioctl-opt = callPackage ../development/python-modules/ioctl-opt { };
 
   ionhash = callPackage ../development/python-modules/ionhash { };
 
@@ -9730,6 +9734,8 @@ self: super: with self; {
 
   oemthermostat = callPackage ../development/python-modules/oemthermostat { };
 
+  ogmios = callPackage ../development/python-modules/ogmios { };
+
   okonomiyaki = callPackage ../development/python-modules/okonomiyaki { };
 
   okta = callPackage ../development/python-modules/okta { };
@@ -11068,6 +11074,8 @@ self: super: with self; {
   plac = callPackage ../development/python-modules/plac { };
 
   plaid-python = callPackage ../development/python-modules/plaid-python { };
+
+  planetary-computer = callPackage ../development/python-modules/planetary-computer { };
 
   plantuml = callPackage ../development/python-modules/plantuml { };
 
@@ -16058,6 +16066,8 @@ self: super: with self; {
   systemd = callPackage ../development/python-modules/systemd {
     inherit (pkgs) systemd;
   };
+
+  systemdunitparser = callPackage ../development/python-modules/systemdunitparser { };
 
   sysv-ipc = callPackage ../development/python-modules/sysv-ipc { };
 
