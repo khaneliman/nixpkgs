@@ -914,6 +914,32 @@ in
     dontPatchShebangs = true;
   });
 
+  nui-nvim = prev.nui-nvim.overrideAttrs (oa: {
+    doCheck = true;
+    nativeCheckInputs = [
+      final.luacov
+      final.luafilesystem
+      final.plenary-nvim
+      gitMinimal
+      neovim-unwrapped
+      # writableTmpDirAsHomeHook
+    ];
+    checkPhase = ''
+      runHook preCheck
+
+      # Linking the dependencies since script wants to clone them each time
+      mkdir -p .tests/site/pack/deps/start
+      ln -s ${vimPlugins.plenary-nvim} .tests/site/pack/deps/start/plenary.nvim
+
+      # TODO: apply upstream patch
+
+      # Run tests
+      ./scripts/test.sh
+
+      runHook postCheck
+    '';
+  });
+
   psl = prev.psl.overrideAttrs (drv: {
     buildInputs = drv.buildInputs or [ ] ++ [ libpsl ];
 
