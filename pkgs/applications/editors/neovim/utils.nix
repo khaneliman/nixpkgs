@@ -284,7 +284,6 @@ let
     packages:
     let
       rawPackDir = vimUtils.packDir packages;
-
     in
     rawPackDir.override {
       postBuild = ''

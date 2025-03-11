@@ -28,6 +28,8 @@ let
     version = attrs.version or oa.version;
     rockspecVersion = oa.rockspecVersion;
 
+    NIX_DEBUG = 1;
+
     extraConfig = ''
       -- to create a flat hierarchy
       lua_modules_path = "lua"

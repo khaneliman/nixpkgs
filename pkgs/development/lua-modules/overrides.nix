@@ -919,17 +919,17 @@ in
     nativeCheckInputs = [
       final.luacov
       final.luafilesystem
-      final.plenary-nvim
       gitMinimal
       neovim-unwrapped
-      # writableTmpDirAsHomeHook
     ];
     checkPhase = ''
       runHook preCheck
 
       # Linking the dependencies since script wants to clone them each time
       mkdir -p .tests/site/pack/deps/start
-      ln -s ${vimPlugins.plenary-nvim} .tests/site/pack/deps/start/plenary.nvim
+      ln -s ${
+        prev.plenary-nvim.overrideAttrs { patches = [ ./nui.patch ]; }
+      } .tests/site/pack/deps/start/plenary.nvim
 
       # TODO: apply upstream patch
 
