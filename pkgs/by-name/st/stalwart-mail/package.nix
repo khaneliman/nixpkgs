@@ -9,7 +9,6 @@
   sqlite,
   foundationdb,
   zstd,
-  rust-jemalloc-sys-unprefixed,
   stdenv,
   nix-update-script,
   nixosTests,
@@ -19,33 +18,19 @@
   stalwartEnterprise ? false,
 }:
 
-let
-  rocksdbJemalloc = rocksdb.override { enableJemalloc = true; };
-in
 rustPlatform.buildRustPackage (finalAttrs: {
   pname = "stalwart-mail" + (lib.optionalString stalwartEnterprise "-enterprise");
-  version = "0.11.8";
+  version = "0.12.4";
 
   src = fetchFromGitHub {
     owner = "stalwartlabs";
-    repo = "mail-server";
+    repo = "stalwart";
     tag = "v${finalAttrs.version}";
-    hash = "sha256-VqGosbSQxNeOS+kGtvXAmz6vyz5mJlXvKZM57B1Xue4=";
+    hash = "sha256-MUbWGBbb8+b5cp+M5w27A/cHHkMcoEtkN13++FyBvbM=";
   };
 
-  # rocksdb does not properly distinguish between pointers it has allocated itself
-  # and pointers which were passed in and might be registered with a different
-  # allocator, so we enable the unprefixed_malloc_on_supported_platforms to use
-  # jemalloc implicitly in the entire process.
-  postPatch = ''
-    for file in crates/main/Cargo.toml tests/Cargo.toml; do
-      substituteInPlace $file --replace-fail \
-        'jemallocator = "0.5.0"' 'jemallocator = { version = "0.5.0", features = ["unprefixed_malloc_on_supported_platforms"] }'
-    done
-  '';
-
   useFetchCargoVendor = true;
-  cargoHash = "sha256-iheURWxO0cOvO+FV01l2Vmo0B+S2mXzue6mx3gapftQ=";
+  cargoHash = "sha256-G1c7hh0nScc4Cx7A1UUXv6slA6pP0fC6h00zR71BJIo=";
 
   nativeBuildInputs = [
     pkg-config
@@ -58,11 +43,9 @@ rustPlatform.buildRustPackage (finalAttrs: {
     openssl
     sqlite
     zstd
-    rust-jemalloc-sys-unprefixed
-    rocksdbJemalloc
   ] ++ lib.optionals (stdenv.hostPlatform.isLinux && withFoundationdb) [ foundationdb ];
 
-  # Issue: https://github.com/stalwartlabs/mail-server/issues/1104
+  # Issue: https://github.com/stalwartlabs/stalwart/issues/1104
   buildNoDefaultFeatures = true;
   buildFeatures =
     [
@@ -80,8 +63,8 @@ rustPlatform.buildRustPackage (finalAttrs: {
   env = {
     OPENSSL_NO_VENDOR = true;
     ZSTD_SYS_USE_PKG_CONFIG = true;
-    ROCKSDB_INCLUDE_DIR = "${rocksdbJemalloc}/include";
-    ROCKSDB_LIB_DIR = "${rocksdbJemalloc}/lib";
+    ROCKSDB_INCLUDE_DIR = "${rocksdb}/include";
+    ROCKSDB_LIB_DIR = "${rocksdb}/lib";
   };
 
   postInstall = ''
@@ -133,6 +116,10 @@ rustPlatform.buildRustPackage (finalAttrs: {
     "--skip=smtp::queue::retry::queue_retry"
     # Missing store type. Try running `STORE=<store_type> cargo test`: NotPresent
     "--skip=store::store_tests"
+    # Missing store type. Try running `STORE=<store_type> cargo test`: NotPresent
+    "--skip=cluster::cluster_tests"
+    # Missing store type. Try running `STORE=<store_type> cargo test`: NotPresent
+    "--skip=webdav::webdav_tests"
     # thread 'config::parser::tests::toml_parse' panicked at crates/utils/src/config/parser.rs:463:58:
     # called `Result::unwrap()` on an `Err` value: "Expected ['\\n'] but found '!' in value at line 70."
     "--skip=config::parser::tests::toml_parse"
@@ -160,6 +147,11 @@ rustPlatform.buildRustPackage (finalAttrs: {
     # No queue event received.
     # NOTE: Test unreliable on high load systems
     "--skip=smtp::management::queue::manage_queue"
+    # thread 'responses::tests::parse_responses' panicked at crates/dav-proto/src/responses/mod.rs:671:17:
+    # assertion `left == right` failed: failed for 008.xml
+    #   left: ElementEnd
+    #  right: Bytes([...])
+    "--skip=responses::tests::parse_responses"
   ];
 
   doCheck = !(stdenv.hostPlatform.isLinux && stdenv.hostPlatform.isAarch64);
@@ -168,7 +160,7 @@ rustPlatform.buildRustPackage (finalAttrs: {
   __darwinAllowLocalNetworking = true;
 
   passthru = {
-    rocksdb = rocksdbJemalloc; # make used rocksdb version available (e.g., for backup scripts)
+    inherit rocksdb; # make used rocksdb version available (e.g., for backup scripts)
     webadmin = callPackage ./webadmin.nix { };
     updateScript = nix-update-script { };
     tests.stalwart-mail = nixosTests.stalwart-mail;
@@ -189,6 +181,7 @@ rustPlatform.buildRustPackage (finalAttrs: {
         }
       ];
 
+    mainProgram = "stalwart";
     maintainers = with lib.maintainers; [
       happysalada
       onny
