@@ -14,7 +14,6 @@
   pciutils,
   pipewire,
   adwaita-icon-theme,
-  channel,
   generated,
   writeScript,
   writeText,
@@ -34,8 +33,7 @@ let
 
   inherit (generated) version sources;
 
-  binaryName =
-    if (channel == "release" || stdenv.hostPlatform.isDarwin) then "firefox" else "firefox-${channel}";
+  binaryName = "firefox";
 
   mozillaPlatforms = {
     i686-linux = "linux-i686";
@@ -68,7 +66,7 @@ let
 
   source = lib.findFirst (sourceMatches mozLocale) defaultSource sources;
 
-  pname = "firefox-${channel}-bin-unwrapped";
+  pname = "firefox-bin-unwrapped";
 in
 
 stdenv.mkDerivation {
@@ -144,8 +142,6 @@ stdenv.mkDerivation {
     updateScript = import ./update.nix {
       inherit
         pname
-        channel
-        lib
         writeScript
         xidel
         coreutils
@@ -155,15 +151,11 @@ stdenv.mkDerivation {
         curl
         runtimeShell
         ;
-      baseUrl =
-        if channel == "developer-edition" then
-          "https://archive.mozilla.org/pub/devedition/releases/"
-        else
-          "https://archive.mozilla.org/pub/firefox/releases/";
+      baseUrl = "https://archive.mozilla.org/pub/firefox/releases/";
     };
   };
 
-  meta = with lib; {
+  meta = {
     changelog = "https://www.mozilla.org/en-US/firefox/${version}/releasenotes/";
     description = "Mozilla Firefox, free web browser (binary package)";
     homepage = "https://www.mozilla.org/firefox/";
@@ -188,10 +180,10 @@ stdenv.mkDerivation {
       free = false;
       redistributable = true; # since MPL-2.0 still applies
     };
-    sourceProvenance = with sourceTypes; [ binaryNativeCode ];
+    sourceProvenance = with lib.sourceTypes; [ binaryNativeCode ];
     platforms = builtins.attrNames mozillaPlatforms;
     hydraPlatforms = [ ];
-    maintainers = with maintainers; [
+    maintainers = with lib.maintainers; [
       taku0
       lovesegfault
     ];
