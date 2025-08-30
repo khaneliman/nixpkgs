@@ -1943,12 +1943,6 @@ in
     checkInputs = [ self.lualine-nvim ];
   };
 
-  meson = buildVimPlugin {
-    inherit (meson) pname version src;
-    preInstall = "cd data/syntax-highlighting/vim";
-    meta.maintainers = with lib.maintainers; [ vcunat ];
-  };
-
   mind-nvim = super.mind-nvim.overrideAttrs {
     dependencies = [ self.plenary-nvim ];
   };
