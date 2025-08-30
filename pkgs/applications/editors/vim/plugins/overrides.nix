@@ -2991,7 +2991,10 @@ in
 
   perfanno-nvim = super.perfanno-nvim.overrideAttrs (old: {
     dependencies = [ gperf ];
-    meta.maintainers = with lib.maintainers; [ fredeb ];
+
+    meta = old.meta // {
+      maintainers = with lib.maintainers; [ fredeb ];
+    };
   });
 
   persisted-nvim = super.persisted-nvim.overrideAttrs {
@@ -3395,15 +3398,20 @@ in
       };
     };
 
-  syntax-tree-surfer = super.syntax-tree-surfer.overrideAttrs {
+  syntax-tree-surfer = super.syntax-tree-surfer.overrideAttrs (old: {
     dependencies = [ self.nvim-treesitter ];
-    meta.maintainers = with lib.maintainers; [ callumio ];
-  };
 
-  tardis-nvim = super.tardis-nvim.overrideAttrs {
+    meta = old.meta // {
+      maintainers = with lib.maintainers; [ callumio ];
+    };
+  });
+
+  tardis-nvim = super.tardis-nvim.overrideAttrs (old: {
     dependencies = [ self.plenary-nvim ];
-    meta.maintainers = with lib.maintainers; [ fredeb ];
-  };
+    meta = old.meta // {
+      maintainers = with lib.maintainers; [ fredeb ];
+    };
+  });
 
   taskwarrior2 = buildVimPlugin {
     inherit (taskwarrior2) version pname;
@@ -4078,10 +4086,12 @@ in
   vim-tabby = super.vim-tabby.overrideAttrs {
   };
 
-  vim-textobj-entire = super.vim-textobj-entire.overrideAttrs {
+  vim-textobj-entire = super.vim-textobj-entire.overrideAttrs (old: {
     dependencies = [ self.vim-textobj-user ];
-    meta.maintainers = with lib.maintainers; [ workflow ];
-  };
+    meta = old.meta // {
+      maintainers = with lib.maintainers; [ workflow ];
+    };
+  });
 
   vim-tpipeline = super.vim-tpipeline.overrideAttrs {
     # Requires global variable
