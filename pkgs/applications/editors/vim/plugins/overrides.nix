@@ -1158,17 +1158,6 @@ in
     '';
   };
 
-  ethersync = buildVimPlugin rec {
-    inherit (ethersync)
-      pname
-      version
-      src
-      meta
-      ;
-
-    sourceRoot = "${src.name}/nvim-plugin";
-  };
-
   executor-nvim = super.executor-nvim.overrideAttrs {
     dependencies = [ self.nui-nvim ];
   };
