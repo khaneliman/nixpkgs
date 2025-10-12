@@ -423,5 +423,58 @@ pkgs.recurseIntoAttrs rec {
     ${nvim_with_rocks_nvim}/bin/nvim -V3log.txt -i NONE +'Rocks install plenary.nvim' +quit! -e
   '';
 
+  # Test that lua package checks don't run when converting to vim plugin
+  # This ensures we don't double-run tests (lua tests in lua build, vim tests in vim build)
+  nvim_lua_check_separation =
+    let
+      luaPkgWithSmartChecks = pkgs.luajitPackages.gitsigns-nvim.overrideAttrs (oldAttrs: {
+        doCheck = true;
+        checkPhase = ''
+          runHook preCheck
+
+          echo "========================================="
+          echo "🔍 LUA PACKAGE CHECK PHASE RUNNING"
+          echo "Package name: ${oldAttrs.pname or "unknown"}"
+          echo "Derivation name: $name"
+          echo "========================================="
+
+          if [[ "$name" == *"vimplugin"* ]]; then
+            echo "❌ ERROR: Lua package checks are running in vim plugin context!"
+            echo "Lua checks should only run during lua package build, not vim plugin build."
+            exit 1
+          fi
+
+          echo "✅ Correctly running in lua package build context"
+          echo "✅ Lua package check separation test passed"
+
+          runHook postCheck
+        '';
+      });
+
+      vimPluginFromLua = neovimUtils.buildNeovimPlugin {
+        luaAttr = luaPkgWithSmartChecks;
+      };
+
+      testNeovim = wrapNeovimUnstable neovim-unwrapped {
+        extraName = "-lua-check-separation-test";
+        plugins = [ vimPluginFromLua ];
+      };
+    in
+    runTest testNeovim ''
+      echo "========================================="
+      echo "🧪 Testing lua/vim check separation..."
+      echo "========================================="
+      echo "This test validates that our fix prevents lua checks from running"
+      echo "during vim plugin builds. The lua package check phase will fail"
+      echo "if it detects it's running in a vim plugin context."
+      echo ""
+      echo "Lua package: ${luaPkgWithSmartChecks}"
+      echo "Vim plugin: ${vimPluginFromLua}"
+      echo "Test neovim: ${testNeovim}"
+      echo ""
+      echo "✅ Success: lua checks only ran during lua build, not vim build"
+      echo "✅ Fix is working correctly - no double-checking detected!"
+    '';
+
   inherit (vimPlugins) corePlugins;
 }
