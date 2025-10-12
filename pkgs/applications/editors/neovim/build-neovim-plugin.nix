@@ -45,6 +45,13 @@ let
         ];
         version = "${originalLuaDrv.version}-unstable-${oa.version}";
         __intentionallyOverridingVersion = true;
+
+        checkPhase = ''
+          runHook preCheck
+          # The lua tests already ran during the lua package build
+          # Only vim-specific checks (vimCommandCheckHook, neovimRequireCheckHook) will run via nativeCheckInputs
+          runHook postCheck
+        '';
       }
     )
   );
