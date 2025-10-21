@@ -10,10 +10,11 @@
   cacert,
   cairo,
   dconf,
-  fetchurl,
+  enchant2,
   file,
   fontconfig,
   freetype,
+  fuse3,
   gdk-pixbuf,
   glib,
   glib-networking,
@@ -22,8 +23,12 @@
   gtk2-x11,
   gtk3,
   gtk_engines,
+  harfbuzz,
   heimdal,
+  hyphen,
+  icu,
   krb5,
+  lcms2,
   libGL,
   libappindicator-gtk3,
   libcanberra-gtk3,
@@ -34,12 +39,15 @@
   libinput,
   libjpeg,
   libjson,
+  libnotify,
   libpng12,
   libpulseaudio,
   libredirect,
+  libseccomp,
   libsecret,
   libsoup_2_4,
   libvorbis,
+  libxslt,
   libxml2_13,
   llvmPackages,
   more,
@@ -54,8 +62,8 @@
   symlinkJoin,
   systemd,
   tzdata,
-  # webkitgtk_4_0,
   which,
+  woff2,
   xorg,
   zlib,
 
@@ -63,6 +71,7 @@
   version,
   prefix,
   hash,
+  broken ? false,
 
   extraCerts ? [ ],
 }:
@@ -137,8 +146,10 @@ stdenv.mkDerivation rec {
     atk
     cairo
     dconf
+    enchant2
     fontconfig
     freetype
+    (lib.getLib fuse3)
     gdk-pixbuf
     glib-networking
     gnome2.gtkglext
@@ -146,8 +157,12 @@ stdenv.mkDerivation rec {
     gtk2-x11
     gtk3
     gtk_engines
+    harfbuzz
     heimdal
+    hyphen
+    icu
     krb5
+    lcms2
     libGL
     libcanberra-gtk3
     libcap
@@ -156,11 +171,14 @@ stdenv.mkDerivation rec {
     libinput
     libjpeg
     libjson
+    libnotify
     libpng12
     libpulseaudio
+    libseccomp
     libsecret
     libsoup_2_4
     libvorbis
+    libxslt
     libxml2_13
     llvmPackages.libunwind
     nspr
@@ -173,7 +191,7 @@ stdenv.mkDerivation rec {
     speex
     stdenv.cc.cc
     (lib.getLib systemd)
-    # webkitgtk_4_0
+    woff2
     xorg.libXScrnSaver
     xorg.libXaw
     xorg.libXmu
@@ -216,7 +234,7 @@ stdenv.mkDerivation rec {
           ${lib.optionalString (icaFlag program != null) ''--add-flags "${icaFlag program} $ICAInstDir"''} \
           --set ICAROOT "$ICAInstDir" \
           --prefix GIO_EXTRA_MODULES : "${glib-networking}/lib/gio/modules" \
-          --prefix LD_LIBRARY_PATH : "$ICAInstDir:$ICAInstDir/lib" \
+          --prefix LD_LIBRARY_PATH : "$ICAInstDir:$ICAInstDir/lib:$ICAInstDir/lib/webkit2gtk-4.0" \
           --set LD_PRELOAD "${libredirect}/lib/libredirect.so ${lib.getLib pcsclite}/lib/libpcsclite.so" \
           --set NIX_REDIRECTS "/usr/share/zoneinfo=${tzdata}/share/zoneinfo:/etc/zoneinfo=${tzdata}/share/zoneinfo:/etc/timezone=$ICAInstDir/timezone"
       '';
@@ -274,6 +292,22 @@ stdenv.mkDerivation rec {
 
       ${mkWrappers copyCert extraCerts}
 
+      # Extract bundled webkit2gtk-4.0 libraries
+      # Citrix bundles webkit libraries to support Ubuntu 24.04+ which removed webkit2gtk-4.0 from repos
+      echo "Extracting bundled webkit2gtk-4.0 libraries..."
+      if [ -f "$ICAInstDir/Webkit2gtk4.0/webkit2gtk-4.0.tar.gz" ]; then
+        pushd "$ICAInstDir"
+        tar -xzf Webkit2gtk4.0/webkit2gtk-4.0.tar.gz
+        # Move webkit libraries to lib directory for easier discovery
+        mkdir -p lib/webkit2gtk-4.0
+        cp -r webkit2gtk-4.0-package/usr/lib/x86_64-linux-gnu/* lib/webkit2gtk-4.0/
+        # Clean up
+        rm -rf webkit2gtk-4.0-package Webkit2gtk4.0
+        popd
+      else
+        echo "Warning: Bundled webkit2gtk-4.0 tarball not found"
+      fi
+
       # See https://developer-docs.citrix.com/en-us/citrix-workspace-app-for-linux/citrix-workspace-app-for-linux-oem-reference-guide/reference-information/#library-files
       # Those files are fallbacks to support older libwekit.so and libjpeg.so
       rm $out/opt/citrix-icaclient/lib/ctxjpeg_fb_8.so || true
@@ -299,6 +333,13 @@ stdenv.mkDerivation rec {
   # Make sure that `autoPatchelfHook` is executed before
   # running `ctx_rehash`.
   dontAutoPatchelf = true;
+
+  # Ignore missing optional dependencies from bundled webkit and optional Citrix features
+  autoPatchelfIgnoreMissingDeps = [
+    "libfuse3.so.3"        # Optional FUSE filesystem support (ctxfuse)
+    "libharfbuzz-icu.so.0" # Optional harfbuzz ICU support (advanced text shaping)
+    "libmanette-0.2.so.0"  # Optional gamepad support in webkit
+  ];
   preFixup = ''
     find $out/opt/citrix-icaclient/lib -name "libopencv_imgcodecs.so.*" | while read -r fname; do
       # lib needs libtiff.so.5, but nixpkgs provides libtiff.so.6
@@ -306,6 +347,11 @@ stdenv.mkDerivation rec {
       # lib needs libjpeg.so.8, but nixpkgs provides libjpeg.so.9
       patchelf --replace-needed libjpeg.so.8 libjpeg.so $fname
     done
+
+    # Bundled webkit needs libjpeg.so.8, but nixpkgs provides libjpeg.so.9
+    if [ -f "$out/opt/citrix-icaclient/lib/webkit2gtk-4.0/libwebkit2gtk-4.0.so.37.56.4" ]; then
+      patchelf --replace-needed libjpeg.so.8 libjpeg.so "$out/opt/citrix-icaclient/lib/webkit2gtk-4.0/libwebkit2gtk-4.0.so.37.56.4"
+    fi
   '';
   postFixup = ''
     autoPatchelf -- "$out"
@@ -313,8 +359,7 @@ stdenv.mkDerivation rec {
   '';
 
   meta = with lib; {
-    # webkitgtk_4_0 was removed
-    broken = true;
+    inherit broken;
     license = licenses.unfree;
     description = "Citrix Workspace";
     sourceProvenance = with sourceTypes; [ binaryNativeCode ];
