@@ -23,6 +23,18 @@ def rewrite_input(
     redirects: Redirects | None = None,
     append: list[PluginDesc] | None = None,
 ):
+    """Update input CSV file with redirects and new plugins.
+
+    Handles repository redirects by updating deprecated.json and modifying
+    the input CSV. Can also append new plugins.
+
+    Args:
+        config: Fetch configuration
+        input_file: Path to plugin CSV file
+        deprecated: Path to deprecated.json
+        redirects: Map of old descriptor to new repo
+        append: New plugin descriptors to add
+    """
     log.info("Rewriting input file %s", input_file)
 
     if redirects is None:
@@ -74,6 +86,13 @@ def rewrite_input(
 
 
 def commit(repo: git.Repo, message: str, files: list[Path]) -> None:
+    """Stage files and create git commit if changes exist.
+
+    Args:
+        repo: Git repository object
+        message: Commit message
+        files: Files to stage and commit
+    """
     repo.index.add([str(f.resolve()) for f in files])
 
     if repo.index.diff("HEAD"):

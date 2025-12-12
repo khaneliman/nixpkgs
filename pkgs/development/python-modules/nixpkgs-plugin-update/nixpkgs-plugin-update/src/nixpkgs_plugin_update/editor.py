@@ -25,7 +25,22 @@ log = logging.getLogger()
 
 
 class Editor:
-    """The configuration of the update script."""
+    """Base class for plugin update scripts.
+
+    Provides common functionality for vim, kakoune, and lua plugin updaters.
+    Subclasses must implement generate_nix() and can override other methods.
+
+    Attributes:
+        name: Editor name (vim, kakoune, lua)
+        root: Root directory containing plugin files
+        get_plugins: Nix expression to get current plugins
+        default_in: Default input CSV file path
+        default_out: Default output Nix file path
+        deprecated: Path to deprecated.json
+        cache_file: Cache file name
+        nixpkgs_repo: Git repository object
+        nixpkgs: Path to nixpkgs checkout
+    """
 
     def __init__(
         self,
@@ -51,7 +66,11 @@ class Editor:
         )
 
     def add(self, args):
-        """CSV spec"""
+        """Add new plugin to the set and optionally commit.
+
+        Args:
+            args: Parsed command-line arguments with add_plugins list
+        """
         log.debug("called the 'add' command")
         fetch_config = FetchConfig(args.proc, args.github_token)
         editor = self
@@ -85,13 +104,27 @@ class Editor:
                 )
 
     def update(self, _args):
-        """CSV spec"""
+        """Update plugins (should be overridden by subclasses).
+
+        Args:
+            _args: Parsed command-line arguments
+        """
         print("the update member function should be overridden in subclasses")
 
     def get_current_plugins(
         self, config: FetchConfig, nixpkgs: str
     ) -> list[tuple[PluginDesc, Plugin]]:
-        """To fill the cache"""
+        """Load currently generated plugins from Nix evaluation.
+
+        Used to fill cache and compare versions for partial updates.
+
+        Args:
+            config: Fetch configuration
+            nixpkgs: Path to nixpkgs checkout
+
+        Returns:
+            List of (descriptor, plugin) tuples
+        """
         data = run_nix_expr(self.get_plugins, nixpkgs)
         plugins = []
         for name, attr in data.items():
@@ -124,11 +157,27 @@ class Editor:
         return plugins
 
     def load_plugin_spec(self, config: FetchConfig, plugin_file) -> list[PluginDesc]:
-        """CSV spec"""
+        """Load plugin specifications from input file.
+
+        Args:
+            config: Fetch configuration
+            plugin_file: Path to CSV file
+
+        Returns:
+            List of plugin descriptors
+        """
         return load_plugins_from_csv(config, plugin_file)
 
     def generate_nix(self, _plugins, _outfile: str):
-        """Returns nothing for now, writes directly to outfile"""
+        """Generate Nix derivations file (must be implemented by subclasses).
+
+        Args:
+            _plugins: List of (descriptor, plugin) tuples
+            _outfile: Path to output file
+
+        Raises:
+            NotImplementedError: Must be implemented by subclass
+        """
         raise NotImplementedError()
 
     def filter_plugins_to_update(
@@ -171,6 +220,17 @@ class Editor:
         config: FetchConfig,
         to_update: list[str] | None,
     ):
+        """Create update function that fetches and generates plugins.
+
+        Args:
+            input_file: Path to input CSV
+            output_file: Path to output Nix file
+            config: Fetch configuration
+            to_update: Optional list of plugin names to update (None = all)
+
+        Returns:
+            Function that performs the update when called
+        """
         if to_update is None:
             to_update = []
 
@@ -248,6 +308,17 @@ class Editor:
         current: list[tuple[PluginDesc, Plugin]],
         fetched: list[tuple[PluginDesc, Exception | Plugin, "Repo | None"]],
     ) -> list[tuple[PluginDesc, Exception | Plugin, "Repo | None"]]:
+        """Merge fetched plugins with current plugins for partial updates.
+
+        Updates only the plugins that were fetched, preserving others unchanged.
+
+        Args:
+            current: All currently generated plugins
+            fetched: Newly fetched plugins (subset of current)
+
+        Returns:
+            Complete list with fetched plugins updated
+        """
         result: dict[str, tuple[PluginDesc, Exception | Plugin, "Repo | None"]] = {
             pl.normalized_name: (pdesc, pl, None) for pdesc, pl in current
         }
@@ -266,15 +337,30 @@ class Editor:
 
     @property
     def attr_path(self):
+        """Get Nix attribute path for plugin set (e.g., 'vimPlugins')."""
         return self.name + "Plugins"
 
     def get_drv_name(self, name: str):
+        """Get full Nix derivation path for a plugin.
+
+        Args:
+            name: Plugin name
+
+        Returns:
+            Full path like 'vimPlugins.foo'
+        """
         return self.attr_path + "." + name
 
     def rewrite_input(self, *args, **kwargs):
+        """Delegate to operations.rewrite_input."""
         return rewrite_input(*args, **kwargs)
 
     def create_parser(self):
+        """Create argument parser for this editor's update script.
+
+        Returns:
+            ArgumentParser with add and update subcommands
+        """
         from .utils import LOG_LEVELS
 
         common = argparse.ArgumentParser(
@@ -377,9 +463,7 @@ class Editor:
         return main
 
     def run(self):
-        """
-        Convenience function
-        """
+        """Parse arguments and run the appropriate command (add or update)."""
         from .utils import LOG_LEVELS
 
         parser = self.create_parser()

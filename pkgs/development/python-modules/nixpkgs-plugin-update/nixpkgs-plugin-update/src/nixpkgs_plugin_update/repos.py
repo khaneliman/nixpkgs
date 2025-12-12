@@ -23,20 +23,36 @@ log = logging.getLogger()
 
 
 class Repo:
+    """Generic git repository for plugin fetching.
+
+    Handles arbitrary git repositories using nix-prefetch-git and git ls-remote.
+
+    Attributes:
+        uri: URL to the repository
+        redirect: Set when repository redirects to new location
+        token: GitHub API token (unused for generic repos)
+    """
+
     def __init__(self, uri: str, branch: str) -> None:
+        """Initialize repository.
+
+        Args:
+            uri: Git repository URL
+            branch: Branch to fetch from
+        """
         self.uri = uri
-        """Url to the repo"""
         self._branch = branch
-        # Redirect is the new Repo to use
         self.redirect: "Repo | None" = None
         self.token: str | None = "dummy_token"
 
     @property
     def name(self):
+        """Extract repository name from URI."""
         return self.uri.strip("/").split("/")[-1]
 
     @property
     def branch(self):
+        """Get branch name, defaulting to HEAD."""
         return self._branch or "HEAD"
 
     def __str__(self) -> str:
@@ -47,10 +63,22 @@ class Repo:
 
     @retry(urllib.error.URLError, tries=4, delay=3, backoff=2)
     def has_submodules(self) -> bool:
+        """Check if repository has git submodules.
+
+        Generic implementation always returns True for safety.
+
+        Returns:
+            True (conservative default)
+        """
         return True
 
     @retry(urllib.error.URLError, tries=4, delay=3, backoff=2)
     def latest_commit(self) -> tuple[str, datetime]:
+        """Fetch latest commit hash and date for the branch.
+
+        Returns:
+            Tuple of (commit_hash, commit_date)
+        """
         log.debug("Latest commit")
         loaded = self._prefetch(None)
         updated = datetime.strptime(loaded["date"], "%Y-%m-%dT%H:%M:%S%z")
@@ -59,10 +87,12 @@ class Repo:
 
     @retry(urllib.error.URLError, tries=4, delay=3, backoff=2)
     def get_latest_tag(self) -> str | None:
-        """
-        Fetch the most recent tag from the repository.
-        Returns None if no tags exist.
-        Uses git ls-remote for generic repositories.
+        """Fetch the most recent tag from the repository.
+
+        Uses git ls-remote --tags with version sorting.
+
+        Returns:
+            Most recent tag name, or None if no tags exist
         """
         try:
             cmd = [
@@ -98,6 +128,14 @@ class Repo:
             return None
 
     def _prefetch(self, ref: str | None):
+        """Run nix-prefetch-git to fetch repository.
+
+        Args:
+            ref: Git ref to fetch, or None for latest
+
+        Returns:
+            Parsed JSON output from nix-prefetch-git
+        """
         cmd = ["nix-prefetch-git", "--quiet", "--fetch-submodules", self.uri]
         if ref is not None:
             cmd.append(ref)
@@ -107,11 +145,27 @@ class Repo:
         return loaded
 
     def prefetch(self, ref: str) -> str:
+        """Prefetch repository and return hash.
+
+        Args:
+            ref: Git ref to fetch
+
+        Returns:
+            SHA256 hash of fetched source
+        """
         log.info("Prefetching %s", self.uri)
         loaded = self._prefetch(ref)
         return loaded["sha256"]
 
     def as_nix(self, plugin: "Plugin") -> str:
+        """Generate Nix expression for fetching this plugin.
+
+        Args:
+            plugin: Plugin with commit and hash information
+
+        Returns:
+            Nix fetchgit expression
+        """
         return f"""fetchgit {{
       url = "{self.uri}";
       rev = "{plugin.commit}";
@@ -120,11 +174,28 @@ class Repo:
 
 
 class RepoGitHub(Repo):
+    """GitHub-specific repository implementation.
+
+    Uses GitHub API for efficient tag fetching and checks for submodules.
+    Falls back to nix-prefetch-url for repos without submodules (faster).
+
+    Attributes:
+        owner: GitHub repository owner
+        repo: GitHub repository name
+        token: GitHub API token for higher rate limits
+    """
+
     def __init__(self, owner: str, repo: str, branch: str) -> None:
+        """Initialize GitHub repository.
+
+        Args:
+            owner: GitHub username or organization
+            repo: Repository name
+            branch: Branch to fetch from
+        """
         self.owner = owner
         self.repo = repo
         self.token = None
-        """Url to the repo"""
         super().__init__(self.url(""), branch)
         log.debug(
             "Instantiating github repo owner=%s and repo=%s", self.owner, self.repo
@@ -132,14 +203,28 @@ class RepoGitHub(Repo):
 
     @property
     def name(self):
+        """Get repository name."""
         return self.repo
 
     def url(self, path: str) -> str:
+        """Construct GitHub URL for given path.
+
+        Args:
+            path: Path to append to repository URL
+
+        Returns:
+            Full GitHub URL
+        """
         res = urljoin(f"https://github.com/{self.owner}/{self.repo}/", path)
         return res
 
     @retry(urllib.error.URLError, tries=4, delay=3, backoff=2)
     def has_submodules(self) -> bool:
+        """Check if repository has .gitmodules file on GitHub.
+
+        Returns:
+            True if .gitmodules exists, False otherwise
+        """
         try:
             req = make_request(self.url(f"blob/{self.branch}/.gitmodules"), self.token)
             with urllib.request.urlopen(req, timeout=10):
@@ -152,6 +237,13 @@ class RepoGitHub(Repo):
 
     @retry(urllib.error.URLError, tries=4, delay=3, backoff=2)
     def latest_commit(self) -> tuple[str, datetime]:
+        """Fetch latest commit from GitHub Atom feed.
+
+        Checks for repository redirects and updates self.redirect if found.
+
+        Returns:
+            Tuple of (commit_hash, commit_date)
+        """
         commit_url = self.url(f"commits/{self.branch}.atom")
         log.debug("Sending request to %s", commit_url)
         commit_req = make_request(commit_url, self.token)
@@ -178,10 +270,12 @@ class RepoGitHub(Repo):
 
     @retry(urllib.error.URLError, tries=4, delay=3, backoff=2)
     def get_latest_tag(self) -> str | None:
-        """
-        Fetch the most recent tag using GitHub API.
-        Returns None if no tags exist or on error.
+        """Fetch the most recent tag using GitHub API.
+
         More efficient than git ls-remote for GitHub repos.
+
+        Returns:
+            Most recent tag name, or None if no tags exist or on error
         """
         try:
             tags_url = (
@@ -216,6 +310,12 @@ class RepoGitHub(Repo):
             return None
 
     def _check_for_redirect(self, url: str, req: http.client.HTTPResponse):
+        """Check if request was redirected and update self.redirect if so.
+
+        Args:
+            url: Original request URL
+            req: HTTP response object
+        """
         response_url = req.geturl()
         if url != response_url:
             new_owner, new_name = (
@@ -226,6 +326,17 @@ class RepoGitHub(Repo):
             self.redirect = new_repo
 
     def prefetch(self, ref: str) -> str:
+        """Prefetch repository, choosing optimal method.
+
+        Uses nix-prefetch-git for repos with submodules, or faster
+        nix-prefetch-url for repos without submodules.
+
+        Args:
+            ref: Git ref to fetch
+
+        Returns:
+            SHA256 hash of fetched source
+        """
         if self.has_submodules():
             sha256 = super().prefetch(ref)
         else:
@@ -233,12 +344,28 @@ class RepoGitHub(Repo):
         return sha256
 
     def prefetch_github(self, ref: str) -> str:
+        """Prefetch GitHub tarball (faster for repos without submodules).
+
+        Args:
+            ref: Git ref to fetch
+
+        Returns:
+            SHA256 hash of fetched tarball
+        """
         cmd = ["nix-prefetch-url", "--unpack", self.url(f"archive/{ref}.tar.gz")]
         log.debug("Running %s", cmd)
         data = subprocess.check_output(cmd)
         return data.strip().decode("utf-8")
 
     def as_nix(self, plugin: "Plugin") -> str:
+        """Generate Nix expression for fetching this GitHub plugin.
+
+        Args:
+            plugin: Plugin with commit and hash information
+
+        Returns:
+            Nix fetchFromGitHub expression
+        """
         if plugin.has_submodules:
             submodule_attr = "\n      fetchSubmodules = true;"
         else:
@@ -253,8 +380,18 @@ class RepoGitHub(Repo):
 
 
 def make_repo(uri: str, branch) -> Repo:
-    """Instantiate a Repo with the correct specialization depending on server (gitub spec)"""
-    # dumb check to see if it's of the form owner/repo (=> github) or https://...
+    """Create appropriate Repo subclass based on URI.
+
+    Detects GitHub repositories and creates RepoGitHub for efficiency,
+    otherwise creates generic Repo.
+
+    Args:
+        uri: Repository URI (github.com URL or owner/repo shorthand)
+        branch: Git branch name
+
+    Returns:
+        Repo or RepoGitHub instance
+    """
     res = urlparse(uri)
     if res.netloc in ["github.com", ""]:
         owner, repo = res.path.strip("/").split("/")

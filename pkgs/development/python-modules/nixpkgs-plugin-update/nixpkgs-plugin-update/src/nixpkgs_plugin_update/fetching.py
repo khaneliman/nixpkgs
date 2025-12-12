@@ -21,6 +21,17 @@ def prefetch_plugin(
     p: PluginDesc,
     cache: "Cache | None" = None,
 ) -> tuple[Plugin, "Repo | None"]:
+    """Fetch plugin metadata and source.
+
+    Fetches commit info, git tags, and prefetches source. Uses cache when available.
+
+    Args:
+        p: Plugin descriptor specifying what to fetch
+        cache: Optional cache to check/update
+
+    Returns:
+        Tuple of (Plugin with all metadata, redirect_repo or None)
+    """
     commit = None
     log.info(
         "Fetching last commit for plugin %s from %s@%s", p.name, p.repo.uri, p.branch
@@ -63,6 +74,12 @@ def prefetch_plugin(
 
 
 def print_download_error(plugin: PluginDesc, ex: Exception):
+    """Print formatted exception with traceback for plugin fetch failure.
+
+    Args:
+        plugin: Plugin that failed to fetch
+        ex: Exception that was raised
+    """
     print(f"{plugin}: {ex}", file=sys.stderr)
     ex_traceback = ex.__traceback__
     tb_lines = [
@@ -75,7 +92,16 @@ def print_download_error(plugin: PluginDesc, ex: Exception):
 def check_results(
     results: list[tuple[PluginDesc, Exception | Plugin, "Repo | None"]],
 ) -> tuple[list[tuple[PluginDesc, Plugin]], Redirects]:
-    """Check prefetch results, separate successes from failures, and handle redirects."""
+    """Check prefetch results, separate successes from failures, and handle redirects.
+
+    Exits with error if any plugins failed to fetch.
+
+    Args:
+        results: List of (descriptor, plugin_or_exception, redirect) tuples
+
+    Returns:
+        Tuple of (successful_plugins, redirect_map)
+    """
     failures: list[tuple[PluginDesc, Exception]] = []
     plugins = []
     redirects: Redirects = {}
@@ -103,6 +129,17 @@ def check_results(
 def prefetch(
     plugin_desc: PluginDesc, cache: "Cache"
 ) -> tuple[PluginDesc, Exception | Plugin, "Repo | None"]:
+    """Wrapper for prefetch_plugin that catches exceptions.
+
+    Used with multiprocessing.Pool to ensure exceptions don't kill workers.
+
+    Args:
+        plugin_desc: Plugin descriptor to fetch
+        cache: Cache to check/update
+
+    Returns:
+        Tuple of (descriptor, plugin_or_exception, redirect)
+    """
     try:
         plugin, redirect = prefetch_plugin(plugin_desc, cache)
         cache[plugin.commit] = plugin
