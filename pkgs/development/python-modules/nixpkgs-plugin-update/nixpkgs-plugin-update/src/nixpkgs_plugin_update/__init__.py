@@ -125,6 +125,46 @@ class Repo:
 
         return loaded["rev"], updated
 
+    @retry(urllib.error.URLError, tries=4, delay=3, backoff=2)
+    def get_latest_tag(self) -> str | None:
+        """
+        Fetch the most recent tag from the repository.
+        Returns None if no tags exist.
+        Uses git ls-remote for generic repositories.
+        """
+        try:
+            cmd = [
+                "git", "ls-remote", "--tags", "--refs",
+                "--sort=-version:refname",
+                self.uri
+            ]
+            log.debug("Fetching tags with: %s", cmd)
+            output = subprocess.check_output(cmd, stderr=subprocess.STDOUT, timeout=10)
+            lines = output.decode('utf-8').strip().split('\n')
+
+            if not lines or lines[0] == '':
+                log.debug("No tags found for %s", self.uri)
+                return None
+
+            # First line should be the most recent tag
+            # Format: "<commit-hash>\trefs/tags/<tag-name>"
+            first_line = lines[0].strip()
+            if '\t' in first_line:
+                tag_ref = first_line.split('\t')[1]
+                # Extract tag name from refs/tags/tagname
+                if tag_ref.startswith('refs/tags/'):
+                    tag_name = tag_ref[10:]  # Strip "refs/tags/"
+                    log.debug("Found latest tag: %s", tag_name)
+                    return tag_name
+
+            return None
+        except subprocess.CalledProcessError as e:
+            log.debug("Failed to fetch tags for %s: %s", self.uri, e)
+            return None
+        except Exception as e:
+            log.warning("Unexpected error fetching tags for %s: %s", self.uri, e)
+            return None
+
     def _prefetch(self, ref: str | None):
         cmd = ["nix-prefetch-git", "--quiet", "--fetch-submodules", self.uri]
         if ref is not None:
@@ -203,6 +243,41 @@ class RepoGitHub(Repo):
             ), f"No updated tag found feed entry {xml!r}"
             updated = datetime.strptime(updated_tag.text, "%Y-%m-%dT%H:%M:%SZ")
             return Path(str(url.path)).name, updated
+
+    @retry(urllib.error.URLError, tries=4, delay=3, backoff=2)
+    def get_latest_tag(self) -> str | None:
+        """
+        Fetch the most recent tag using GitHub API.
+        Returns None if no tags exist or on error.
+        More efficient than git ls-remote for GitHub repos.
+        """
+        try:
+            tags_url = f"https://api.github.com/repos/{self.owner}/{self.repo}/tags?per_page=1"
+            log.debug("Fetching tags from GitHub API: %s", tags_url)
+
+            req = make_request(tags_url, self.token)
+            with urllib.request.urlopen(req, timeout=10) as response:
+                data = json.load(response)
+
+                if not data or len(data) == 0:
+                    log.debug("No tags found for %s/%s", self.owner, self.repo)
+                    return None
+
+                # First element is the latest tag
+                tag_name = data[0]['name']
+                log.debug("Found latest tag: %s", tag_name)
+                return tag_name
+
+        except urllib.error.HTTPError as e:
+            if e.code == 404:
+                log.debug("No tags endpoint or repo not found: %s/%s", self.owner, self.repo)
+                return None
+            else:
+                log.warning("HTTP error fetching tags for %s/%s: %s", self.owner, self.repo, e)
+                return None
+        except Exception as e:
+            log.warning("Error fetching tags for %s/%s: %s", self.owner, self.repo, e)
+            return None
 
     def _check_for_redirect(self, url: str, req: http.client.HTTPResponse):
         response_url = req.geturl()
@@ -286,6 +361,7 @@ class Plugin:
     has_submodules: bool
     sha256: str
     date: datetime | None = None
+    last_tag: str | None = None
 
     @property
     def normalized_name(self) -> str:
@@ -294,11 +370,31 @@ class Plugin:
     @property
     def version(self) -> str:
         assert self.date is not None
-        return self.date.strftime("%Y-%m-%d")
+        date_str = self.date.strftime("%Y-%m-%d")
+
+        # Determine tag portion of version
+        if self.last_tag is not None:
+            tag_part = self._strip_tag_prefix(self.last_tag)
+        else:
+            tag_part = "0"
+
+        return f"{tag_part}-unstable-{date_str}"
+
+    @staticmethod
+    def _strip_tag_prefix(tag: str) -> str:
+        """Strip common version prefixes like 'v', 'V', 'release-' from tags"""
+        # Strip 'v' or 'V' prefix if present
+        if tag.startswith(('v', 'V')):
+            return tag[1:]
+        # Strip 'release-' prefix if present
+        if tag.startswith('release-'):
+            return tag[8:]
+        return tag
 
     def as_json(self) -> dict[str, str]:
         copy = self.__dict__.copy()
         del copy["date"]
+        # last_tag is kept in JSON for caching
         return copy
 
 
@@ -420,12 +516,23 @@ class Editor:
         for name, attr in data.items():
             checksum = attr["checksum"]
 
-            # https://github.com/NixOS/nixpkgs/blob/8a335419/pkgs/applications/editors/neovim/build-neovim-plugin.nix#L36
-            # https://github.com/NixOS/nixpkgs/pull/344478#discussion_r1786646055
-            version = re.search(r"\d\d\d\d-\d\d?-\d\d?", attr["version"])
-            if version is None:
-                raise ValueError(f"Cannot parse version: {attr['version']}")
-            date = datetime.strptime(version.group(), "%Y-%m-%d")
+            # Parse version in format: <tag>-unstable-YYYY-MM-DD
+            version_str = attr["version"]
+
+            # Extract date (always at the end)
+            date_match = re.search(r"(\d{4}-\d{2}-\d{2})$", version_str)
+            if date_match is None:
+                raise ValueError(f"Cannot parse date from version: {version_str}")
+            date = datetime.strptime(date_match.group(1), "%Y-%m-%d")
+
+            # Extract tag (everything before "-unstable-")
+            tag_match = re.search(r"^(.+?)-unstable-", version_str)
+            last_tag = None
+            if tag_match:
+                tag_part = tag_match.group(1)
+                # If tag_part is "0", it means no tag exists
+                if tag_part != "0":
+                    last_tag = tag_part
 
             pdesc = PluginDesc.load_from_string(config, f'{attr["homePage"]} as {name}')
             p = Plugin(
@@ -434,6 +541,7 @@ class Editor:
                 checksum["submodules"],
                 checksum["sha256"],
                 date,
+                last_tag=last_tag,
             )
 
             plugins.append((pdesc, p))
@@ -722,11 +830,19 @@ def prefetch_plugin(
     log.info(f"Fetching last commit for plugin {p.name} from {p.repo.uri}@{p.branch}")
     commit, date = p.repo.latest_commit()
 
+    # Fetch latest tag
+    latest_tag = p.repo.get_latest_tag()
+    if latest_tag:
+        log.debug(f"Latest tag for {p.name}: {latest_tag}")
+    else:
+        log.debug(f"No tags found for {p.name}, will use '0' prefix")
+
     cached_plugin = cache[commit] if cache else None
     if cached_plugin is not None:
         log.debug(f"Cache hit for {p.name}!")
         cached_plugin.name = p.name
         cached_plugin.date = date
+        cached_plugin.last_tag = latest_tag  # Update tag even for cached plugins
         return cached_plugin, p.repo.redirect
 
     has_submodules = p.repo.has_submodules()
@@ -734,7 +850,7 @@ def prefetch_plugin(
     sha256 = p.repo.prefetch(commit)
 
     return (
-        Plugin(p.name, commit, has_submodules, sha256, date=date),
+        Plugin(p.name, commit, has_submodules, sha256, date=date, last_tag=latest_tag),
         p.repo.redirect,
     )
 
@@ -818,7 +934,11 @@ class Cache:
             data = json.load(f)
             for attr in data.values():
                 p = Plugin(
-                    attr["name"], attr["commit"], attr["has_submodules"], attr["sha256"]
+                    attr["name"],
+                    attr["commit"],
+                    attr["has_submodules"],
+                    attr["sha256"],
+                    last_tag=attr.get("last_tag")  # Gracefully handle missing field
                 )
                 downloads[attr["commit"]] = p
         return downloads
