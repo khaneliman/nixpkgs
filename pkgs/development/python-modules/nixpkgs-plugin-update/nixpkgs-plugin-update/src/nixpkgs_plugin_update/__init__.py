@@ -38,13 +38,11 @@ def update_plugins(editor: Editor, args):
         input_file=args.input_file,
         output_file=args.outfile,
         config=fetch_config,
-        to_update=getattr(  # if script was called without arguments
-            args, "update_only", None
-        ),
+        to_update=getattr(args, "update_only", None),
     )
 
     start_time = time.time()
-    redirects = update()
+    redirects, updated_plugins = update()
     duration = time.time() - start_time
     print(f"The plugin update took {duration:.2f}s.")
     editor.rewrite_input(fetch_config, args.input_file, editor.deprecated, redirects)
@@ -54,28 +52,37 @@ def update_plugins(editor: Editor, args):
     if autocommit:
         try:
             repo = git.Repo(os.getcwd())
-            updated = datetime.now(tz=UTC).strftime("%Y-%m-%d")
+
+            if len(updated_plugins) == 0:
+                updated = datetime.now(tz=UTC).strftime("%Y-%m-%d")
+                message = f"{editor.attr_path}: update on {updated}"
+            elif len(updated_plugins) == 1:
+                name, old_ver, new_ver = updated_plugins[0]
+                message = f"{editor.attr_path}.{name}: {old_ver} -> {new_ver}"
+            elif len(updated_plugins) <= 5:
+                names = ",".join(p[0] for p in updated_plugins)
+                message = f"{editor.attr_path}.{{{names}}}: update"
+            else:
+                count = len(updated_plugins)
+                message = f"{editor.attr_path}: update {count} plugins"
+
             print(args.outfile)
-            commit(repo, f"{editor.attr_path}: update on {updated}", [args.outfile])
+            commit(repo, message, [args.outfile])
         except git.InvalidGitRepositoryError:
             print("Not in a git repository, skipping commit.")
 
 
 # Public API - minimal exports for external scripts
 __all__ = [
-    # Core classes
     "Editor",
     "Plugin",
     "PluginDesc",
     "FetchConfig",
-    # Repository types (accessed via PluginDesc.repo)
     "Repo",
     "RepoGitHub",
     "make_repo",
-    # Utilities
     "run_nix_expr",
     "load_plugins_from_csv",
     "prefetch_plugin",
-    # Main entry point
     "update_plugins",
 ]
