@@ -484,6 +484,7 @@ class Plugin:
     commit: str
     has_submodules: bool
     sha256: str
+    version: str
     date: datetime | None = None
     last_tag: str | None = None
 
@@ -508,21 +509,18 @@ class Plugin:
         result = subprocess.check_output(cmd, stderr=subprocess.DEVNULL)
         return result.decode("utf-8").strip()
 
-    @property
-    def version(self) -> str:
-        assert self.date is not None
-        date_str = self.date.strftime("%Y-%m-%d")
+    @staticmethod
+    def _strip_tag_prefix(tag: str) -> str:
+        if tag.startswith(("v", "V")):
+            return tag[1:]
+        if tag.startswith("release-"):
+            return tag[8:]
+        return tag
 
-        tag_part = "0"
-        if self.last_tag:
-            tag = (
-                self.last_tag[1:]
-                if self.last_tag.startswith(("v", "V"))
-                else self.last_tag
-            )
-            if tag and tag[0].isdigit():
-                tag_part = tag
-
+    @staticmethod
+    def compute_version(date: datetime, last_tag: str | None) -> str:
+        date_str = date.strftime("%Y-%m-%d")
+        tag_part = Plugin._strip_tag_prefix(last_tag) if last_tag is not None else "0"
         return f"{tag_part}-unstable-{date_str}"
 
     @staticmethod
@@ -673,7 +671,10 @@ class Editor:
             checksum = attr["checksum"]
             version_str = attr["version"]
 
-            date, last_tag = Plugin.parse_version_string(version_str)
+            date_match = re.search(r"(\d{4}-\d{2}-\d{2})$", version_str)
+            if date_match is None:
+                raise ValueError(f"Cannot parse date from version: {version_str}")
+            date = datetime.strptime(date_match.group(1), "%Y-%m-%d")
 
             pdesc = PluginDesc.load_from_string(config, f"{attr['homePage']} as {name}")
             p = Plugin(
@@ -681,8 +682,9 @@ class Editor:
                 checksum["rev"],
                 checksum["submodules"],
                 checksum["sha256"],
-                date,
-                last_tag=last_tag,
+                version_str,
+                date=date,
+                last_tag=None,
             )
 
             plugins.append((pdesc, p))
@@ -1005,14 +1007,25 @@ def prefetch_plugin(
         cached_plugin.name = p.name
         cached_plugin.date = date
         cached_plugin.last_tag = latest_tag
+        cached_plugin.version = Plugin.compute_version(date, latest_tag)
         return cached_plugin, p.repo.redirect
 
     has_submodules = p.repo.has_submodules()
     log.debug(f"prefetch {p.name}")
     sha256 = p.repo.prefetch(commit)
 
+    version = Plugin.compute_version(date, latest_tag)
+
     return (
-        Plugin(p.name, commit, has_submodules, sha256, date=date, last_tag=latest_tag),
+        Plugin(
+            p.name,
+            commit,
+            has_submodules,
+            sha256,
+            version,
+            date=date,
+            last_tag=latest_tag,
+        ),
         p.repo.redirect,
     )
 
@@ -1096,11 +1109,19 @@ class Cache:
         with open(self.cache_file) as f:
             data = json.load(f)
             for attr in data.values():
+                if "version" in attr:
+                    version = attr["version"]
+                else:
+                    version = "0-unstable-1970-01-01"
+                    if "last_tag" in attr and attr["last_tag"]:
+                        version = f"{attr['last_tag']}-unstable-1970-01-01"
+
                 p = Plugin(
                     attr["name"],
                     attr["commit"],
                     attr["has_submodules"],
                     attr["sha256"],
+                    version,
                     last_tag=attr.get("last_tag"),
                 )
                 downloads[attr["commit"]] = p
