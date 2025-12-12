@@ -115,7 +115,7 @@ class Repo:
         return f"""fetchgit {{
       url = "{self.uri}";
       rev = "{plugin.commit}";
-      sha256 = "{plugin.sha256}";
+      hash = "{plugin.to_sri_hash()}";
     }}"""
 
 
@@ -248,7 +248,7 @@ class RepoGitHub(Repo):
       owner = "{self.owner}";
       repo = "{self.repo}";
       rev = "{plugin.commit}";
-      sha256 = "{plugin.sha256}";{submodule_attr}
+      hash = "{plugin.to_sri_hash()}";{submodule_attr}
     }}"""
 
 

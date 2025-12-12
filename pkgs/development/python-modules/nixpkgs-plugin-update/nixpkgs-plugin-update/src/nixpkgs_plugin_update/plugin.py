@@ -27,7 +27,6 @@ class PluginDesc:
 
     @staticmethod
     def load_from_csv(config: FetchConfig, row: dict[str, str]) -> "PluginDesc":
-        # Import here to avoid circular dependency
         from .repos import make_repo
 
         log.debug("Loading row %s", row)
@@ -37,13 +36,11 @@ class PluginDesc:
         return PluginDesc(
             repo,
             branch.strip(),
-            # alias is usually an empty string
             row["alias"] if row["alias"] else None,
         )
 
     @staticmethod
     def load_from_string(config: FetchConfig, line: str) -> "PluginDesc":
-        # Import here to avoid circular dependency
         from .repos import make_repo
 
         branch = "HEAD"
@@ -76,10 +73,8 @@ class Plugin:
     @staticmethod
     def _strip_tag_prefix(tag: str) -> str:
         """Strip common version prefixes like 'v', 'V', 'release-' from tags"""
-        # Strip 'v' or 'V' prefix if present
         if tag.startswith(("v", "V")):
             return tag[1:]
-        # Strip 'release-' prefix if present
         if tag.startswith("release-"):
             return tag[8:]
         return tag
@@ -88,19 +83,32 @@ class Plugin:
     def compute_version(date: datetime, last_tag: str | None) -> str:
         """Compute version string from date and tag"""
         date_str = date.strftime("%Y-%m-%d")
-
-        # Determine tag portion of version
-        if last_tag is not None:
-            tag_part = Plugin._strip_tag_prefix(last_tag)
-        else:
-            tag_part = "0"
-
+        tag_part = Plugin._strip_tag_prefix(last_tag) if last_tag is not None else "0"
         return f"{tag_part}-unstable-{date_str}"
+
+    def to_sri_hash(self) -> str:
+        """Convert sha256 (any format) to SRI format (sha256-base64)"""
+        import subprocess
+
+        if self.sha256.startswith("sha256-"):
+            return self.sha256
+
+        cmd = [
+            "nix",
+            "hash",
+            "convert",
+            "--hash-algo",
+            "sha256",
+            "--to",
+            "sri",
+            self.sha256,
+        ]
+        result = subprocess.check_output(cmd, stderr=subprocess.DEVNULL)
+        return result.decode("utf-8").strip()
 
     def as_json(self) -> dict[str, str]:
         copy = self.__dict__.copy()
         del copy["date"]
-        # last_tag is kept in JSON for caching
         return copy
 
 
