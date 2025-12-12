@@ -46,6 +46,7 @@ LOG_LEVELS = {
 }
 
 log = logging.getLogger()
+<<<<<<< HEAD
 
 
 def retry(ExceptionToCheck: Any, tries: int = 4, delay: float = 3, backoff: float = 2):
@@ -1237,9 +1238,7 @@ def update_plugins(editor: Editor, args):
         input_file=args.input_file,
         output_file=args.outfile,
         config=fetch_config,
-        to_update=getattr(  # if script was called without arguments
-            args, "update_only", None
-        ),
+        to_update=getattr(args, "update_only", None),
     )
 
     start_time = time.time()
@@ -1250,28 +1249,41 @@ def update_plugins(editor: Editor, args):
 
     autocommit = not args.no_commit
 
-    if autocommit and len(updated_plugins) > 0:
+    if autocommit:
         try:
             repo = git.Repo(os.getcwd())
 
-            if len(updated_plugins) == 1:
+            if len(updated_plugins) == 0:
+                updated = datetime.now(tz=UTC).strftime("%Y-%m-%d")
+                message = f"{editor.attr_path}: update on {updated}"
+            elif len(updated_plugins) == 1:
                 name, old_ver, new_ver = updated_plugins[0]
                 message = f"{editor.attr_path}.{name}: {old_ver} -> {new_ver}"
+            elif len(updated_plugins) <= 5:
+                names = ",".join(p[0] for p in updated_plugins)
+                message = f"{editor.attr_path}.{{{names}}}: update"
             else:
-                message = f"{editor.attr_path}: update on {date.today()}"
+                count = len(updated_plugins)
+                message = f"{editor.attr_path}: update {count} plugins"
 
             print(args.outfile)
             commit(repo, message, [args.outfile])
-        except git.InvalidGitRepositoryError as e:
-            print(f"Not in a git repository: {e}", file=sys.stderr)
-            sys.exit(1)
+        except git.InvalidGitRepositoryError:
+            print("Not in a git repository, skipping commit.")
 
-    if redirects:
-        update()
-        if autocommit:
-            assert editor.nixpkgs_repo is not None
-            commit(
-                editor.nixpkgs_repo,
-                f"{editor.attr_path}: resolve github repository redirects",
-                [args.outfile, args.input_file, editor.deprecated],
-            )
+
+# Public API - minimal exports for external scripts
+__all__ = [
+    "Editor",
+    "Plugin",
+    "PluginDesc",
+    "FetchConfig",
+    "Repo",
+    "RepoGitHub",
+    "make_repo",
+    "run_nix_expr",
+    "load_plugins_from_csv",
+    "prefetch_plugin",
+    "update_plugins",
+]
+
