@@ -101,23 +101,17 @@ class Editor:
         for name, attr in data.items():
             checksum = attr["checksum"]
 
-            # Parse version in format: <tag>-unstable-YYYY-MM-DD
+            # Use version as-is from the file (don't parse/recompute)
             version_str = attr["version"]
 
-            # Extract date (always at the end)
+            # Extract date for cache purposes (date is always at the end of version string)
             date_match = re.search(r"(\d{4}-\d{2}-\d{2})$", version_str)
             if date_match is None:
                 raise ValueError(f"Cannot parse date from version: {version_str}")
             date = datetime.strptime(date_match.group(1), "%Y-%m-%d")
 
-            # Extract tag (everything before "-unstable-")
-            tag_match = re.search(r"^(.+?)-unstable-", version_str)
-            last_tag = None
-            if tag_match:
-                tag_part = tag_match.group(1)
-                # If tag_part is "0", it means no tag exists
-                if tag_part != "0":
-                    last_tag = tag_part
+            # Note: We don't parse last_tag here because we're not updating this plugin
+            # The version field stores the complete version string from the file
 
             pdesc = PluginDesc.load_from_string(config, f"{attr['homePage']} as {name}")
             p = Plugin(
@@ -125,8 +119,9 @@ class Editor:
                 checksum["rev"],
                 checksum["submodules"],
                 checksum["sha256"],
-                date,
-                last_tag=last_tag,
+                version_str,  # Use version from file as-is
+                date=date,
+                last_tag=None,  # Not needed for non-updated plugins
             )
 
             plugins.append((pdesc, p))

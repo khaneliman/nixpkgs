@@ -22,10 +22,11 @@ def prefetch_plugin(
     cache: "Cache | None" = None,
 ) -> tuple[Plugin, "Repo | None"]:
     commit = None
-    log.info("Fetching last commit for plugin %s from %s@%s", p.name, p.repo.uri, p.branch)
+    log.info(
+        "Fetching last commit for plugin %s from %s@%s", p.name, p.repo.uri, p.branch
+    )
     commit, date = p.repo.latest_commit()
 
-    # Fetch latest tag
     latest_tag = p.repo.get_latest_tag()
     if latest_tag:
         log.debug("Latest tag for %s: %s", p.name, latest_tag)
@@ -37,15 +38,26 @@ def prefetch_plugin(
         log.debug("Cache hit for %s!", p.name)
         cached_plugin.name = p.name
         cached_plugin.date = date
-        cached_plugin.last_tag = latest_tag  # Update tag even for cached plugins
+        cached_plugin.last_tag = latest_tag
+        cached_plugin.version = Plugin.compute_version(date, latest_tag)
         return cached_plugin, p.repo.redirect
 
     has_submodules = p.repo.has_submodules()
     log.debug("prefetch %s", p.name)
     sha256 = p.repo.prefetch(commit)
 
+    version = Plugin.compute_version(date, latest_tag)
+
     return (
-        Plugin(p.name, commit, has_submodules, sha256, date=date, last_tag=latest_tag),
+        Plugin(
+            p.name,
+            commit,
+            has_submodules,
+            sha256,
+            version,
+            date=date,
+            last_tag=latest_tag,
+        ),
         p.repo.redirect,
     )
 

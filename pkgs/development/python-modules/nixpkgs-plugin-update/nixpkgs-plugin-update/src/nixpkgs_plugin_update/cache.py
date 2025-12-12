@@ -34,12 +34,20 @@ class Cache:
         with open(self.cache_file, encoding="utf-8") as f:
             data = json.load(f)
             for attr in data.values():
+                if "version" in attr:
+                    version = attr["version"]
+                else:
+                    version = "0-unstable-1970-01-01"
+                    if "last_tag" in attr and attr["last_tag"]:
+                        version = f"{attr['last_tag']}-unstable-1970-01-01"
+
                 p = Plugin(
                     attr["name"],
                     attr["commit"],
                     attr["has_submodules"],
                     attr["sha256"],
-                    last_tag=attr.get("last_tag"),  # Gracefully handle missing field
+                    version,
+                    last_tag=attr.get("last_tag"),
                 )
                 downloads[attr["commit"]] = p
         return downloads

@@ -65,25 +65,13 @@ class Plugin:
     commit: str
     has_submodules: bool
     sha256: str
+    version: str
     date: datetime | None = None
     last_tag: str | None = None
 
     @property
     def normalized_name(self) -> str:
         return self.name.replace(".", "-")
-
-    @property
-    def version(self) -> str:
-        assert self.date is not None
-        date_str = self.date.strftime("%Y-%m-%d")
-
-        # Determine tag portion of version
-        if self.last_tag is not None:
-            tag_part = self._strip_tag_prefix(self.last_tag)
-        else:
-            tag_part = "0"
-
-        return f"{tag_part}-unstable-{date_str}"
 
     @staticmethod
     def _strip_tag_prefix(tag: str) -> str:
@@ -95,6 +83,19 @@ class Plugin:
         if tag.startswith("release-"):
             return tag[8:]
         return tag
+
+    @staticmethod
+    def compute_version(date: datetime, last_tag: str | None) -> str:
+        """Compute version string from date and tag"""
+        date_str = date.strftime("%Y-%m-%d")
+
+        # Determine tag portion of version
+        if last_tag is not None:
+            tag_part = Plugin._strip_tag_prefix(last_tag)
+        else:
+            tag_part = "0"
+
+        return f"{tag_part}-unstable-{date_str}"
 
     def as_json(self) -> dict[str, str]:
         copy = self.__dict__.copy()
