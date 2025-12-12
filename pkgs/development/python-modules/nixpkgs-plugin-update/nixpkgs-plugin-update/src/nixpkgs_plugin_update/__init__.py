@@ -1,7 +1,7 @@
 # python library used to update plugins:
-# - pkgs/applications/editors/vim/plugins/update.py
+# - pkgs/applications/editors/vim/plugins/utils/update.py
 # - pkgs/applications/editors/kakoune/plugins/update.py
-# - pkgs/development/lua-modules/updater/updater.py
+# - pkgs/by-name/lu/luarocks-packages-updater/updater.py
 
 import argparse
 import csv
