@@ -6,7 +6,7 @@
 }:
 let
   root = ./.;
-  updateScript = ./update.py;
+  updater = callPackage ./updater.nix { };
 
   mkYaziPlugin =
     args@{
@@ -61,7 +61,7 @@ let
             command = writeShellScript "update-${pluginName}" ''
               export PLUGIN_NAME="${pluginName}"
               export PLUGIN_PNAME="${pname}"
-              exec ${updateScript}
+              exec ${lib.getExe updater} --plugin "${pluginName}" --commit
             '';
             supportedFeatures = [ "commit" ];
           };
@@ -77,5 +77,5 @@ lib.pipe root [
   (builtins.mapAttrs (name: _: call name))
 ]
 // {
-  inherit mkYaziPlugin;
+  inherit mkYaziPlugin updater;
 }
