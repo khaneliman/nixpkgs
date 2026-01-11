@@ -41,10 +41,11 @@ def run_command(cmd: str, capture_output: bool = True) -> str:
 
 def get_plugin_info(nixpkgs_dir: str, plugin_name: str, plugin_pname: str) -> Plugin:
     """Get plugin repository information from Nix"""
-    owner = run_command(f"nix eval --raw -f {nixpkgs_dir} yaziPlugins.\"{plugin_name}\".src.owner")
-    repo = run_command(f"nix eval --raw -f {nixpkgs_dir} yaziPlugins.\"{plugin_name}\".src.repo")
+    cmd = f'nix eval --json -f {nixpkgs_dir} yaziPlugins."{plugin_name}".src --apply "s: {{ owner = s.owner; repo = s.repo; }}"'
+    result = run_command(cmd)
+    data = json.loads(result)
 
-    return Plugin(name=plugin_name, pname=plugin_pname, owner=owner, repo=repo)
+    return Plugin(name=plugin_name, pname=plugin_pname, owner=data["owner"], repo=data["repo"])
 
 
 def get_yazi_version(nixpkgs_dir: str) -> str:
