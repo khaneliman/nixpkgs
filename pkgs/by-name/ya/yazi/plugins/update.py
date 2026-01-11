@@ -7,10 +7,24 @@ import os
 import re
 import subprocess
 import sys
+from dataclasses import dataclass
 from pathlib import Path
 
 import requests
 from packaging import version
+
+
+@dataclass
+class Plugin:
+    name: str
+    pname: str
+    owner: str
+    repo: str
+    old_version: str = "unknown"
+    new_version: str = "unknown"
+    old_commit: str = "unknown"
+    new_commit: str = "unknown"
+    default_branch: str | None = None
 
 
 def run_command(cmd: str, capture_output: bool = True) -> str:
@@ -25,15 +39,12 @@ def run_command(cmd: str, capture_output: bool = True) -> str:
     return result.stdout.strip() if capture_output else ""
 
 
-def get_plugin_info(nixpkgs_dir: str, plugin_name: str) -> dict[str, str]:
+def get_plugin_info(nixpkgs_dir: str, plugin_name: str, plugin_pname: str) -> Plugin:
     """Get plugin repository information from Nix"""
     owner = run_command(f"nix eval --raw -f {nixpkgs_dir} yaziPlugins.\"{plugin_name}\".src.owner")
     repo = run_command(f"nix eval --raw -f {nixpkgs_dir} yaziPlugins.\"{plugin_name}\".src.repo")
 
-    return {
-        "owner": owner,
-        "repo": repo
-    }
+    return Plugin(name=plugin_name, pname=plugin_pname, owner=owner, repo=repo)
 
 
 def get_yazi_version(nixpkgs_dir: str) -> str:
@@ -65,11 +76,13 @@ def get_default_branch(owner: str, repo: str, headers: dict[str, str]) -> str:
         print("Falling back to 'main' as default branch")
         return "main"
 
-def fetch_plugin_content(owner: str, repo: str, plugin_pname: str, headers: dict[str, str]) -> str:
+def fetch_plugin_content(plugin: Plugin, headers: dict[str, str]) -> str:
     """Fetch the plugin's main.lua content from GitHub"""
-    default_branch = get_default_branch(owner, repo, headers)
-    plugin_path = f"{plugin_pname}/" if owner == "yazi-rs" else ""
-    main_lua_url = f"https://raw.githubusercontent.com/{owner}/{repo}/{default_branch}/{plugin_path}main.lua"
+    if not plugin.default_branch:
+        plugin.default_branch = get_default_branch(plugin.owner, plugin.repo, headers)
+
+    plugin_path = f"{plugin.pname}/" if plugin.owner == "yazi-rs" else ""
+    main_lua_url = f"https://raw.githubusercontent.com/{plugin.owner}/{plugin.repo}/{plugin.default_branch}/{plugin_path}main.lua"
 
     try:
         response = requests.get(main_lua_url, headers=headers)
@@ -95,16 +108,17 @@ def check_version_compatibility(plugin_content: str, plugin_name: str, yazi_vers
     return required_version
 
 
-def get_latest_commit(owner: str, repo: str, plugin_pname: str, headers: dict[str, str]) -> tuple[str, str]:
+def get_latest_commit(plugin: Plugin, headers: dict[str, str]) -> tuple[str, str]:
     """Get the latest commit hash and date for the plugin"""
-    default_branch = get_default_branch(owner, repo, headers)
+    if not plugin.default_branch:
+        plugin.default_branch = get_default_branch(plugin.owner, plugin.repo, headers)
 
-    if owner == "yazi-rs":
+    if plugin.owner == "yazi-rs":
         # For official plugins, get commit info for the specific plugin file
-        api_url = f"https://api.github.com/repos/{owner}/{repo}/commits?path={plugin_pname}/main.lua&per_page=1"
+        api_url = f"https://api.github.com/repos/{plugin.owner}/{plugin.repo}/commits?path={plugin.pname}/main.lua&per_page=1"
     else:
         # For third-party plugins, get latest commit on default branch
-        api_url = f"https://api.github.com/repos/{owner}/{repo}/commits/{default_branch}"
+        api_url = f"https://api.github.com/repos/{plugin.owner}/{plugin.repo}/commits/{plugin.default_branch}"
 
     try:
         response = requests.get(api_url, headers=headers)
@@ -113,7 +127,7 @@ def get_latest_commit(owner: str, repo: str, plugin_pname: str, headers: dict[st
     except requests.RequestException as e:
         raise RuntimeError(f"Error fetching commit data: {e}")
 
-    if owner == "yazi-rs":
+    if plugin.owner == "yazi-rs":
         latest_commit = commit_data[0]["sha"]
         commit_date = commit_data[0]["commit"]["committer"]["date"].split("T")[0]
     else:
@@ -235,11 +249,11 @@ def validate_environment(plugin_name: str | None = None, plugin_pname: str | Non
     return nixpkgs_dir, plugin_name, plugin_pname
 
 
-def update_single_plugin(nixpkgs_dir: str, plugin_name: str, plugin_pname: str) -> dict[str, str] | None:
+def update_single_plugin(nixpkgs_dir: str, plugin_name: str, plugin_pname: str) -> Plugin | None:
     """Update a single Yazi plugin
 
     Returns:
-        dict with update info including old_version, new_version, etc. or None if no change
+        Plugin object with update info or None if no change
     """
     plugin_dir = f"{nixpkgs_dir}/pkgs/by-name/ya/yazi/plugins/{plugin_name}"
     default_nix_path = f"{plugin_dir}/default.nix"
@@ -250,18 +264,18 @@ def update_single_plugin(nixpkgs_dir: str, plugin_name: str, plugin_pname: str) 
     old_commit_match = re.search(r'rev = "([^"]*)"', nix_content)
     old_commit = old_commit_match.group(1) if old_commit_match else "unknown"
 
-    plugin_info = get_plugin_info(nixpkgs_dir, plugin_name)
-    owner = plugin_info["owner"]
-    repo = plugin_info["repo"]
+    plugin = get_plugin_info(nixpkgs_dir, plugin_name, plugin_pname)
+    plugin.old_version = old_version
+    plugin.old_commit = old_commit
 
     yazi_version = get_yazi_version(nixpkgs_dir)
 
     headers = get_github_headers()
 
-    plugin_content = fetch_plugin_content(owner, repo, plugin_pname, headers)
+    plugin_content = fetch_plugin_content(plugin, headers)
     required_version = check_version_compatibility(plugin_content, plugin_name, yazi_version)
 
-    latest_commit, commit_date = get_latest_commit(owner, repo, plugin_pname, headers)
+    latest_commit, commit_date = get_latest_commit(plugin, headers)
     print(f"Checking {plugin_name} latest commit {latest_commit} ({commit_date})")
 
     if latest_commit == old_commit:
@@ -272,29 +286,24 @@ def update_single_plugin(nixpkgs_dir: str, plugin_name: str, plugin_pname: str) 
 
     new_version = f"{required_version}-unstable-{commit_date}"
 
-    new_hash = calculate_sri_hash(owner, repo, latest_commit)
+    new_hash = calculate_sri_hash(plugin.owner, plugin.repo, latest_commit)
     print(f"Generated SRI hash: {new_hash}")
 
     update_nix_file(default_nix_path, latest_commit, new_version, new_hash)
 
     print(f"Successfully updated {plugin_name} from {old_version} to {new_version}")
 
-    return {
-        "name": plugin_name,
-        "old_version": old_version,
-        "new_version": new_version,
-        "old_commit": old_commit,
-        "new_commit": latest_commit,
-        "owner": owner,
-        "repo": repo,
-    }
+    plugin.new_version = new_version
+    plugin.new_commit = latest_commit
+
+    return plugin
 
 
-def update_all_plugins(nixpkgs_dir: str) -> list[dict[str, str]]:
+def update_all_plugins(nixpkgs_dir: str) -> list[Plugin]:
     """Update all available Yazi plugins
 
     Returns:
-        list[dict[str, str]]: List of successfully updated plugin info dicts
+        list[Plugin]: List of successfully updated plugin objects
     """
     plugins = get_all_plugins(nixpkgs_dir)
     updated_plugins = []
@@ -309,9 +318,9 @@ def update_all_plugins(nixpkgs_dir: str) -> list[dict[str, str]]:
     updated_count = 0
     failed_plugins = []
 
-    for plugin in plugins:
-        plugin_name = plugin["name"]
-        plugin_pname = plugin["pname"]
+    for plugin_data in plugins:
+        plugin_name = plugin_data["name"]
+        plugin_pname = plugin_data["pname"]
 
         try:
             print(f"\n{'=' * 50}")
@@ -319,12 +328,12 @@ def update_all_plugins(nixpkgs_dir: str) -> list[dict[str, str]]:
             print(f"{'=' * 50}")
 
             try:
-                update_info = update_single_plugin(nixpkgs_dir, plugin_name, plugin_pname)
+                updated_plugin = update_single_plugin(nixpkgs_dir, plugin_name, plugin_pname)
                 checked_count += 1
 
-                if update_info:
+                if updated_plugin:
                     updated_count += 1
-                    updated_plugins.append(update_info)
+                    updated_plugins.append(updated_plugin)
             except KeyboardInterrupt:
                 print("\nUpdate process interrupted by user")
                 sys.exit(1)
@@ -343,7 +352,7 @@ def update_all_plugins(nixpkgs_dir: str) -> list[dict[str, str]]:
     if updated_count > 0:
         print("\nUpdated plugins:")
         for plugin in updated_plugins:
-            print(f"  - {plugin['name']}: {plugin['old_version']} → {plugin['new_version']}")
+            print(f"  - {plugin.name}: {plugin.old_version} → {plugin.new_version}")
 
     if failed_plugins:
         print(f"\nFailed to update {len(failed_plugins)} plugins:")
@@ -353,7 +362,7 @@ def update_all_plugins(nixpkgs_dir: str) -> list[dict[str, str]]:
     return updated_plugins
 
 
-def commit_changes(updated_plugins: list[dict[str, str]]) -> None:
+def commit_changes(updated_plugins: list[Plugin]) -> None:
     """Commit all changes after updating plugins"""
     if not updated_plugins:
         print("No plugins were updated, skipping commit")
@@ -367,23 +376,23 @@ def commit_changes(updated_plugins: list[dict[str, str]]) -> None:
 
         current_date = run_command("date +%Y-%m-%d", capture_output=True)
 
-        def get_compare_url(plugin: dict[str, str]) -> str | None:
-            if plugin["old_commit"] != "unknown":
-                owner = plugin['owner'].strip()
-                repo = plugin['repo'].strip()
-                return f"https://github.com/{owner}/{repo}/compare/{plugin['old_commit']}...{plugin['new_commit']}"
+        def get_compare_url(plugin: Plugin) -> str | None:
+            if plugin.old_commit != "unknown":
+                owner = plugin.owner.strip()
+                repo = plugin.repo.strip()
+                return f"https://github.com/{owner}/{repo}/compare/{plugin.old_commit}...{plugin.new_commit}"
             return None
 
         if len(updated_plugins) == 1:
             plugin = updated_plugins[0]
-            commit_message = f"yaziPlugins.{plugin['name']}: update from {plugin['old_version']} to {plugin['new_version']}"
+            commit_message = f"yaziPlugins.{plugin.name}: update from {plugin.old_version} to {plugin.new_version}"
             compare_url = get_compare_url(plugin)
             if compare_url:
                 commit_message += f"\n\nCompare: {compare_url}"
         else:
             commit_message = f"yaziPlugins: update on {current_date}\n\n"
-            for plugin in sorted(updated_plugins, key=lambda x: x['name']):
-                commit_message += f"- {plugin['name']}: {plugin['old_version']} → {plugin['new_version']}\n"
+            for plugin in sorted(updated_plugins, key=lambda x: x.name):
+                commit_message += f"- {plugin.name}: {plugin.old_version} → {plugin.new_version}\n"
                 compare_url = get_compare_url(plugin)
                 if compare_url:
                     commit_message += f"  Compare: {compare_url}\n"
@@ -399,7 +408,7 @@ def commit_changes(updated_plugins: list[dict[str, str]]) -> None:
 def main():
     """Main function to update Yazi plugins"""
 
-    parser = argparse.ArgumentParser(description="Update Yazi plugins")
+    parser = argparse.ArgumentParser(description="Update Yazi plugins", prog="yazi-plugins-updater")
     group = parser.add_mutually_exclusive_group()
     group.add_argument("--all", action="store_true", help="Update all Yazi plugins")
     group.add_argument("--plugin", type=str, help="Update a specific plugin by name")
