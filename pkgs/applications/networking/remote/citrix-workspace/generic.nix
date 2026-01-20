@@ -67,6 +67,9 @@
   woff2,
   xorg,
   zlib,
+  gst_all_1,
+  libva,
+  x264,
 
   homepage,
   version,
@@ -204,6 +207,16 @@ stdenv.mkDerivation rec {
     xorg.libXmu
     xorg.libXtst
     zlib
+
+    # GStreamer dependencies for webcam/mic redirection (HDX RealTime)
+    gst_all_1.gstreamer
+    gst_all_1.gst-plugins-base
+    gst_all_1.gst-plugins-good
+    gst_all_1.gst-plugins-bad
+    gst_all_1.gst-plugins-ugly
+    gst_all_1.gst-vaapi
+    libva
+    x264
   ];
 
   runtimeDependencies = [
@@ -243,7 +256,17 @@ stdenv.mkDerivation rec {
           --prefix GIO_EXTRA_MODULES : "${glib-networking}/lib/gio/modules" \
           --prefix LD_LIBRARY_PATH : "$ICAInstDir:$ICAInstDir/lib:$ICAInstDir/usr/lib/x86_64-linux-gnu:$ICAInstDir/usr/lib/x86_64-linux-gnu/webkit2gtk-4.0/injected-bundle" \
           --set LD_PRELOAD "${libredirect}/lib/libredirect.so ${lib.getLib pcsclite}/lib/libpcsclite.so" \
-          --set NIX_REDIRECTS "/usr/share/zoneinfo=${tzdata}/share/zoneinfo:/etc/zoneinfo=${tzdata}/share/zoneinfo:/etc/timezone=$ICAInstDir/timezone:/usr/lib/x86_64-linux-gnu=$ICAInstDir/usr/lib/x86_64-linux-gnu"
+          --set NIX_REDIRECTS "/usr/share/zoneinfo=${tzdata}/share/zoneinfo:/etc/zoneinfo=${tzdata}/share/zoneinfo:/etc/timezone=$ICAInstDir/timezone:/usr/lib/x86_64-linux-gnu=$ICAInstDir/usr/lib/x86_64-linux-gnu" \
+          --prefix GST_PLUGIN_SYSTEM_PATH_1_0 : "${
+            lib.makeSearchPath "lib/gstreamer-1.0" [
+              gst_all_1.gstreamer
+              gst_all_1.gst-plugins-base
+              gst_all_1.gst-plugins-good
+              gst_all_1.gst-plugins-bad
+              gst_all_1.gst-plugins-ugly
+              gst_all_1.gst-vaapi
+            ]
+          }"
       '';
       wrapLink = program: ''
         ${wrap program}
