@@ -1,0 +1,2 @@
+# Citrix USB redirection - prevent other handlers when ICA client is remoting
+SUBSYSTEM=="usb", ACTION=="add", PROGRAM="@icaroot@/ctx_usb_isactive", RUN+="@logger@/bin/logger -t ica-usb.rules suppressing HAL action for %k"

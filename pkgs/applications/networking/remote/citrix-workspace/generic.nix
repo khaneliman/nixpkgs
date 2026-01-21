@@ -63,6 +63,7 @@
   symlinkJoin,
   systemd,
   tzdata,
+  util-linux,
   which,
   woff2,
   xorg,
@@ -352,6 +353,31 @@ stdenv.mkDerivation rec {
 
       echo "Copy .desktop files."
       cp $out/opt/citrix-icaclient/desktop/* $out/share/applications/
+
+      # Install USB redirection support
+      # The hinst installer skips USB files when it can't write to /etc, so we install them manually
+      echo "Installing USB redirection support..."
+      if [ -d "./linuxx64/linuxx64.cor/usb" ]; then
+        # Install USB daemon and tools
+        install -m 755 ./linuxx64/linuxx64.cor/usb/ctxusbd "$ICAInstDir/"
+        install -m 755 ./linuxx64/linuxx64.cor/usb/ctxusb "$ICAInstDir/"
+        install -m 755 ./linuxx64/linuxx64.cor/usb/ctx_usb_isactive "$ICAInstDir/"
+        install -m 644 ./linuxx64/linuxx64.cor/usb/usb.conf "$ICAInstDir/"
+        install -m 644 ./linuxx64/linuxx64.cor/usb/VDGUSB.DLL "$ICAInstDir/"
+
+        # Install udev rules (using our own file since upstream has deprecated OPTIONS and hardcoded paths)
+        mkdir -p $out/lib/udev/rules.d
+        substitute ${./85-ica-usb.rules} $out/lib/udev/rules.d/85-ica-usb.rules \
+          --replace-fail "@icaroot@" "$ICAInstDir" \
+          --replace-fail "@logger@" "${util-linux}"
+      else
+        echo "Warning: USB directory not found in tarball, USB redirection will not be available"
+      fi
+
+      # Also install the HID and multitouch udev rules from config/
+      if [ -d "$ICAInstDir/config" ]; then
+        cp "$ICAInstDir/config/"*.rules $out/lib/udev/rules.d/ 2>/dev/null || true
+      fi
 
       # We introduce a dependency on the source file so that it need not be redownloaded everytime
       echo $src >> "$out/share/workspace_dependencies.pin"
