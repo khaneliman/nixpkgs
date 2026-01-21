@@ -215,8 +215,8 @@ stdenv.mkDerivation rec {
     gst_all_1.gst-plugins-bad
     gst_all_1.gst-plugins-ugly
     gst_all_1.gst-vaapi
-    libva
-    x264
+    (lib.getOutput "out" libva)
+    (lib.getOutput "lib" x264)
   ];
 
   runtimeDependencies = [
@@ -237,6 +237,15 @@ stdenv.mkDerivation rec {
     xorg.libxcb
     xorg.xdpyinfo
     xorg.xprop
+
+    gst_all_1.gstreamer
+    gst_all_1.gst-plugins-base
+    gst_all_1.gst-plugins-good
+    gst_all_1.gst-plugins-bad
+    gst_all_1.gst-plugins-ugly
+    gst_all_1.gst-vaapi
+    (lib.getOutput "out" libva)
+    (lib.getOutput "lib" x264)
   ];
 
   installPhase =
@@ -249,24 +258,35 @@ stdenv.mkDerivation rec {
           null
         else
           "-icaroot";
-      wrap = program: ''
-        wrapProgram $out/opt/citrix-icaclient/${program} \
-          ${lib.optionalString (icaFlag program != null) ''--add-flags "${icaFlag program} $ICAInstDir"''} \
-          --set ICAROOT "$ICAInstDir" \
-          --prefix GIO_EXTRA_MODULES : "${glib-networking}/lib/gio/modules" \
-          --prefix LD_LIBRARY_PATH : "$ICAInstDir:$ICAInstDir/lib:$ICAInstDir/usr/lib/x86_64-linux-gnu:$ICAInstDir/usr/lib/x86_64-linux-gnu/webkit2gtk-4.0/injected-bundle" \
-          --set LD_PRELOAD "${libredirect}/lib/libredirect.so ${lib.getLib pcsclite}/lib/libpcsclite.so" \
-          --set NIX_REDIRECTS "/usr/share/zoneinfo=${tzdata}/share/zoneinfo:/etc/zoneinfo=${tzdata}/share/zoneinfo:/etc/timezone=$ICAInstDir/timezone:/usr/lib/x86_64-linux-gnu=$ICAInstDir/usr/lib/x86_64-linux-gnu" \
-          --prefix GST_PLUGIN_SYSTEM_PATH_1_0 : "${
-            lib.makeSearchPath "lib/gstreamer-1.0" [
-              gst_all_1.gstreamer
-              gst_all_1.gst-plugins-base
-              gst_all_1.gst-plugins-good
-              gst_all_1.gst-plugins-bad
-              gst_all_1.gst-plugins-ugly
-              gst_all_1.gst-vaapi
+      gstPluginPath = lib.makeSearchPath "lib/gstreamer-1.0" [
+        (lib.getLib gst_all_1.gstreamer)
+        (lib.getLib gst_all_1.gst-plugins-base)
+        (lib.getLib gst_all_1.gst-plugins-good)
+        (lib.getLib gst_all_1.gst-plugins-bad)
+        (lib.getLib gst_all_1.gst-plugins-ugly)
+        (lib.getLib gst_all_1.gst-vaapi)
+      ];
+      wrapArgs =
+        program:
+        lib.concatStringsSep " " [
+          (lib.optionalString (icaFlag program != null) ''--add-flags "${icaFlag program} $ICAInstDir"'')
+          "--set ICAROOT \"$ICAInstDir\""
+          "--prefix GIO_EXTRA_MODULES : \"${glib-networking}/lib/gio/modules\""
+          "--prefix LD_LIBRARY_PATH : \"$ICAInstDir:$ICAInstDir/lib:$ICAInstDir/usr/lib/x86_64-linux-gnu:$ICAInstDir/usr/lib/x86_64-linux-gnu/webkit2gtk-4.0/injected-bundle\""
+          "--prefix LD_LIBRARY_PATH : \"${
+            lib.makeLibraryPath [
+              (lib.getOutput "out" libva)
+              (lib.getOutput "lib" x264)
             ]
-          }"
+          }\""
+          "--set LD_PRELOAD \"${libredirect}/lib/libredirect.so ${lib.getLib pcsclite}/lib/libpcsclite.so\""
+          "--set NIX_REDIRECTS \"/usr/share/zoneinfo=${tzdata}/share/zoneinfo:/etc/zoneinfo=${tzdata}/share/zoneinfo:/etc/timezone=$ICAInstDir/timezone:/usr/lib/x86_64-linux-gnu=$ICAInstDir/usr/lib/x86_64-linux-gnu\""
+          "--set GST_PLUGIN_SYSTEM_PATH_1_0 \"${gstPluginPath}\""
+          "--set GST_PLUGIN_PATH_1_0 \"${gstPluginPath}\""
+          "--set GST_PLUGIN_PATH \"${gstPluginPath}\""
+        ];
+      wrap = program: ''
+        wrapProgram $out/opt/citrix-icaclient/${program} ${wrapArgs program}
       '';
       wrapLink = program: ''
         ${wrap program}
