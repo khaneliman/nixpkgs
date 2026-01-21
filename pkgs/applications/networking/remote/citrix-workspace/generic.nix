@@ -110,6 +110,15 @@ let
     '';
   };
 
+  # ctxusbd (USB redirection daemon) requires libcap.so.1 but NixOS provides libcap.so.2
+  libcap' = symlinkJoin {
+    name = "libcap-backwards-compat";
+    paths = [ (lib.getLib libcap) ];
+    postBuild = ''
+      ln -sf $out/lib/libcap.so.2 $out/lib/libcap.so.1
+    '';
+  };
+
 in
 
 stdenv.mkDerivation rec {
@@ -175,7 +184,7 @@ stdenv.mkDerivation rec {
     lcms2
     libGL
     libcanberra-gtk3
-    libcap
+    libcap'
     libcxx
     libgbm
     libinput
@@ -224,6 +233,7 @@ stdenv.mkDerivation rec {
     glib
     glib-networking
     libappindicator-gtk3
+    libcap' # ctxusbd uses dlopen for libcap
     libGL
     pcsclite
 
