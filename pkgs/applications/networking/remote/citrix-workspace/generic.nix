@@ -233,7 +233,6 @@ stdenv.mkDerivation rec {
     glib
     glib-networking
     libappindicator-gtk3
-    libcap' # ctxusbd uses dlopen for libcap
     libGL
     pcsclite
 
@@ -406,6 +405,16 @@ stdenv.mkDerivation rec {
     autoPatchelf -- "$out"
 
     $out/opt/citrix-icaclient/util/ctx_rehash
+
+    # Wrap USB daemon and logging daemon - they use dlopen for libcap
+    if [ -f "$out/opt/citrix-icaclient/ctxusbd" ]; then
+      wrapProgram $out/opt/citrix-icaclient/ctxusbd \
+        --prefix LD_LIBRARY_PATH : "${lib.makeLibraryPath [ libcap' ]}"
+    fi
+    if [ -f "$out/opt/citrix-icaclient/util/ctxcwalogd" ]; then
+      wrapProgram $out/opt/citrix-icaclient/util/ctxcwalogd \
+        --prefix LD_LIBRARY_PATH : "${lib.makeLibraryPath [ libcap' ]}"
+    fi
   '';
 
   meta = {
