@@ -188,6 +188,7 @@
   ./programs/cfs-zen-tweaks.nix
   ./programs/chromium.nix
   ./programs/chrysalis.nix
+  ./programs/citrix-workspace.nix
   ./programs/clash-verge.nix
   ./programs/cnping.nix
   ./programs/command-not-found/command-not-found.nix
