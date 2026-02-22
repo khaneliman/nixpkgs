@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import re
-import subprocess
 from dataclasses import dataclass
 from datetime import datetime
 from typing import TYPE_CHECKING
@@ -76,18 +75,9 @@ class Plugin:
         if self.sha256.startswith("sha256-"):
             return self.sha256
 
-        cmd = [
-            "nix",
-            "hash",
-            "convert",
-            "--hash-algo",
-            "sha256",
-            "--to",
-            "sri",
-            self.sha256,
-        ]
-        result = subprocess.check_output(cmd, stderr=subprocess.DEVNULL)
-        return result.decode("utf-8").strip()
+        from .nix import convert_sha256_to_sri
+
+        return convert_sha256_to_sri(self.sha256)
 
     @property
     def version(self) -> str:

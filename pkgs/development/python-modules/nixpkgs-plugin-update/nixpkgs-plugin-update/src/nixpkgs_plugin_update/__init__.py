@@ -19,12 +19,11 @@ from dataclasses import asdict
 from datetime import datetime, date
 from multiprocessing.dummy import Pool
 from pathlib import Path
-from tempfile import NamedTemporaryFile
-from typing import Any
 
 import git
 
 from .models import FetchConfig, Plugin, PluginDesc
+from .nix import CleanEnvironment as _CleanEnvironment, run_nix_expr as _run_nix_expr
 from .repos import Repo, RepoGitHub, make_repo as _make_repo
 
 LOG_LEVELS = {
@@ -55,30 +54,6 @@ def load_plugins_from_csv(
             plugins.append(plugin)
 
     return plugins
-
-
-def run_nix_expr(expr, nixpkgs: str, **args):
-    """
-    :param expr nix expression to fetch current plugins
-    :param nixpkgs Path towards a nixpkgs checkout
-    """
-    with CleanEnvironment(nixpkgs) as nix_path:
-        cmd = [
-            "nix",
-            "eval",
-            "--extra-experimental-features",
-            "nix-command",
-            "--impure",
-            "--json",
-            "--expr",
-            expr,
-            "--nix-path",
-            nix_path,
-        ]
-        log.debug("Running command: %s", " ".join(cmd))
-        out = subprocess.check_output(cmd, **args)
-        data = json.loads(out)
-        return data
 
 
 class Editor:
@@ -460,25 +435,6 @@ class Editor:
         getattr(self, command)(args)
 
 
-class CleanEnvironment(object):
-    def __init__(self, nixpkgs):
-        self.local_pkgs = nixpkgs
-
-    def __enter__(self) -> str:
-        """
-        local_pkgs = str(Path(__file__).parent.parent.parent)
-        """
-        self.old_environ = os.environ.copy()
-        self.empty_config = NamedTemporaryFile()
-        self.empty_config.write(b"{}")
-        self.empty_config.flush()
-        return f"localpkgs={self.local_pkgs}"
-
-    def __exit__(self, exc_type: Any, exc_value: Any, traceback: Any) -> None:
-        os.environ.update(self.old_environ)
-        self.empty_config.close()
-
-
 def prefetch_plugin(
     p: PluginDesc,
     cache: "Cache | None" = None,
@@ -552,6 +508,14 @@ def check_results(
 
 def make_repo(uri: str, branch) -> Repo:
     return _make_repo(uri, branch)
+
+
+class CleanEnvironment(_CleanEnvironment):
+    pass
+
+
+def run_nix_expr(expr, nixpkgs: str, **args):
+    return _run_nix_expr(expr, nixpkgs, **args)
 
 
 def get_cache_path(cache_file_name: str) -> Path | None:
