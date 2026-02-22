@@ -31,7 +31,7 @@ class PluginDesc:
 
     @staticmethod
     def load_from_csv(config: FetchConfig, row: dict[str, str]) -> "PluginDesc":
-        from . import make_repo
+        from .repos import make_repo
 
         branch = row["branch"]
         repo = make_repo(row["repo"], branch.strip())
@@ -44,7 +44,7 @@ class PluginDesc:
 
     @staticmethod
     def load_from_string(config: FetchConfig, line: str) -> "PluginDesc":
-        from . import make_repo
+        from .repos import make_repo
 
         branch = "HEAD"
         alias = None
