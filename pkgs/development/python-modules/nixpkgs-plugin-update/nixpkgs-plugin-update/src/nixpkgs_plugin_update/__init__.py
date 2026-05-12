@@ -1221,12 +1221,9 @@ def check_results(
         if isinstance(result, Exception):
             failures.append((pdesc, result))
         else:
-            new_pdesc = pdesc
             if redirect is not None:
                 redirects.update({pdesc: redirect})
-                new_pdesc = PluginDesc(redirect, pdesc.branch, pdesc.alias)
-                result.name = new_pdesc.name
-            plugins.append((new_pdesc, result))
+            plugins.append((pdesc, result))
 
     if len(failures) == 0:
         return plugins, redirects
@@ -1364,12 +1361,11 @@ def rewrite_input(
             log.info("Resolving deprecated plugin %s -> %s", pdesc.name, new_repo.name)
             new_pdesc = PluginDesc(new_repo, pdesc.branch, pdesc.alias)
 
-            old_plugin, _ = prefetch_plugin(pdesc)
-            new_plugin, _ = prefetch_plugin(new_pdesc)
-
-            if old_plugin.normalized_name != new_plugin.normalized_name:
-                deprecations[old_plugin.normalized_name] = {
-                    "new": new_plugin.normalized_name,
+            old_name = pdesc.name.replace(".", "-")
+            new_name = new_pdesc.name.replace(".", "-")
+            if old_name != new_name:
+                deprecations[old_name] = {
+                    "new": new_name,
                     "date": cur_date_iso,
                 }
 
@@ -1404,6 +1400,39 @@ def commit(repo: git.Repo, message: str, files: list[Path]) -> None:
         print("no changes in working tree to commit")
 
 
+def regenerate_redirected_nix(
+    editor: Editor,
+    args,
+    config: FetchConfig,
+    redirects: Redirects,
+) -> None:
+    current_plugins = editor.get_current_plugins(config, args.nixpkgs)
+    current_plugin_map = {
+        plugin.normalized_name: plugin for _description, plugin in current_plugins
+    }
+
+    redirected_plugins = {}
+    for old_pdesc, new_repo in redirects.items():
+        current_plugin = current_plugin_map[old_pdesc.name.replace(".", "-")]
+        new_pdesc = PluginDesc(new_repo, old_pdesc.branch, old_pdesc.alias)
+        new_plugin = replace(current_plugin, name=new_pdesc.name)
+        redirected_plugins[new_plugin.normalized_name] = (new_pdesc, new_plugin)
+
+    plugins = []
+    for pdesc in editor.load_plugin_spec(config, args.input_file):
+        redirected_plugin = redirected_plugins.get(pdesc.name.replace(".", "-"))
+        if redirected_plugin is not None:
+            plugins.append(redirected_plugin)
+            continue
+
+        current_plugin = current_plugin_map[pdesc.name.replace(".", "-")]
+        plugins.append((pdesc, current_plugin))
+
+    editor.generate_nix(
+        sorted(plugins, key=lambda v: v[1].normalized_name), args.outfile
+    )
+
+
 def update_plugins(editor: Editor, args):
     """The main entry function of this module.
     All input arguments are grouped in the `Editor`."""
@@ -1430,7 +1459,6 @@ def update_plugins(editor: Editor, args):
     redirects, updated_plugins = update()
     duration = time.time() - start_time
     print(f"The plugin update took {duration:.2f}s.")
-    editor.rewrite_input(fetch_config, args.input_file, editor.deprecated, redirects)
 
     autocommit = not args.no_commit
 
@@ -1450,12 +1478,15 @@ def update_plugins(editor: Editor, args):
             print(f"Not in a git repository: {e}", file=sys.stderr)
             sys.exit(1)
 
+    editor.rewrite_input(fetch_config, args.input_file, editor.deprecated, redirects)
+
     if redirects:
-        update()
-        if autocommit:
-            assert editor.nixpkgs_repo is not None
-            commit(
-                editor.nixpkgs_repo,
-                f"{editor.attr_path}: resolve github repository redirects",
-                [args.outfile, args.input_file, editor.deprecated],
-            )
+        regenerate_redirected_nix(editor, args, fetch_config, redirects)
+
+    if redirects and autocommit:
+        assert editor.nixpkgs_repo is not None
+        commit(
+            editor.nixpkgs_repo,
+            f"{editor.attr_path}: resolve github repository redirects",
+            [args.outfile, args.input_file, editor.deprecated],
+        )
