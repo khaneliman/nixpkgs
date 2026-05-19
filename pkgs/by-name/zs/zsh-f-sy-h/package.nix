@@ -20,10 +20,17 @@ stdenvNoCC.mkDerivation rec {
   dontBuild = true;
 
   installPhase = ''
-    plugindir="$out/share/zsh/site-functions"
+    plugindir="$out/share/zsh/plugins/zsh-f-sy-h"
 
     mkdir -p "$plugindir"
     cp -r -- F-Sy-H.plugin.zsh chroma functions share themes "$plugindir"/
+
+    mkdir -p "$out/share/zsh/site-functions"
+    ln -s "$plugindir/F-Sy-H.plugin.zsh" "$out/share/zsh/site-functions/F-Sy-H.plugin.zsh"
+    ln -s "$plugindir/chroma" "$out/share/zsh/site-functions/chroma"
+    ln -s "$plugindir/functions" "$out/share/zsh/site-functions/functions"
+    ln -s "$plugindir/share" "$out/share/zsh/site-functions/share"
+    ln -s "$plugindir/themes" "$out/share/zsh/site-functions/themes"
   '';
 
   meta = {
