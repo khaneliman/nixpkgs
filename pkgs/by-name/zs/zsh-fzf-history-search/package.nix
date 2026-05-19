@@ -23,7 +23,12 @@ stdenvNoCC.mkDerivation {
   installPhase = ''
     runHook preInstall
 
-    install -D zsh-fzf-history-search*.zsh  --target-directory=$out/share/zsh-fzf-history-search
+    plugindir=$out/share/zsh/plugins/zsh-fzf-history-search
+
+    install -D zsh-fzf-history-search*.zsh --target-directory=$plugindir
+
+    # Keep the previous nixpkgs path for users sourcing it directly.
+    ln -s $plugindir $out/share/zsh-fzf-history-search
 
     runHook postInstall
   '';
