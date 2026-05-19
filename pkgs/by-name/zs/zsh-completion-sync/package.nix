@@ -21,7 +21,12 @@ stdenvNoCC.mkDerivation (finalAttrs: {
   dontBuild = true;
 
   installPhase = ''
-    install -D zsh-completion-sync.plugin.zsh  $out/share/zsh-completion-sync/zsh-completion-sync.plugin.zsh
+    plugindir=$out/share/zsh/plugins/zsh-completion-sync
+
+    install -D zsh-completion-sync.plugin.zsh $plugindir/zsh-completion-sync.plugin.zsh
+
+    # Keep the previous nixpkgs path for users sourcing it directly.
+    ln -s $plugindir $out/share/zsh-completion-sync
   '';
 
   passthru.updateScript = gitUpdater {
