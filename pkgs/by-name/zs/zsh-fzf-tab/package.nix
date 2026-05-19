@@ -9,7 +9,7 @@
 }:
 
 let
-  INSTALL_PATH = "${placeholder "out"}/share/fzf-tab";
+  INSTALL_PATH = "${placeholder "out"}/share/zsh/plugins/fzf-tab";
 in
 stdenv.mkDerivation (finalAttrs: {
   pname = "zsh-fzf-tab";
@@ -87,6 +87,9 @@ stdenv.mkDerivation (finalAttrs: {
        install -D -t ${INSTALL_PATH}/modules/Src/aloxaf/ fzftab.bundle
     fi
     popd
+
+    # Keep the previous nixpkgs path for users sourcing it directly.
+    ln -s ${INSTALL_PATH} ${placeholder "out"}/share/fzf-tab
 
     runHook postInstall
   '';
