@@ -22,11 +22,16 @@ stdenv.mkDerivation rec {
   installPhase = ''
     runHook preInstall
 
-    install *.zsh -Dt $out/share/zsh/zsh-abbr/
-    install completions/* -Dt $out/share/zsh/zsh-abbr/completions/
+    plugindir=$out/share/zsh/plugins/zsh-abbr
 
-    install zsh-job-queue/*.zsh -Dt $out/share/zsh/zsh-abbr/zsh-job-queue/
-    install zsh-job-queue/completions/* -Dt $out/share/zsh/zsh-abbr/zsh-job-queue/completions/
+    install *.zsh -Dt $plugindir/
+    install completions/* -Dt $plugindir/completions/
+
+    install zsh-job-queue/*.zsh -Dt $plugindir/zsh-job-queue/
+    install zsh-job-queue/completions/* -Dt $plugindir/zsh-job-queue/completions/
+
+    # Keep the previous nixpkgs path for users sourcing it directly.
+    ln -s $plugindir $out/share/zsh/zsh-abbr
 
     # Required for `man` to find the manpage of abbr, since it looks via PATH
     installManPage man/man1/*
