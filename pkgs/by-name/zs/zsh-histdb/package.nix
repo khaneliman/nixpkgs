@@ -30,8 +30,13 @@ stdenvNoCC.mkDerivation {
   installPhase = ''
     runHook preInstall
 
-    install -Dt $out/share/zsh-histdb/ \
-      sqlite-history.zsh histdb-interactive.zsh histdb-{merge,migrate}
+    plugindir=$out/share/zsh/plugins/zsh-histdb
+
+    install -Dt $plugindir/ \
+      zsh-histdb.plugin.zsh sqlite-history.zsh histdb-interactive.zsh histdb-{merge,migrate}
+
+    # Keep the previous nixpkgs path for users sourcing it directly.
+    ln -s $plugindir $out/share/zsh-histdb
 
     runHook postInstall
   '';
