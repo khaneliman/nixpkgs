@@ -20,11 +20,14 @@ stdenv.mkDerivation rec {
   dontBuild = true;
 
   installPhase = ''
-    outdir=$out/share/zsh/${pname}
+    outdir=$out/share/zsh/plugins/${pname}
     install -D zsh-edit.plugin.zsh $outdir/zsh-edit.plugin.zsh
     install -D _bind $outdir/_bind
     install -d $outdir/functions
     install -D functions/{,.edit}* $outdir/functions
+
+    # Keep the previous nixpkgs path for users sourcing it directly.
+    ln -s $outdir $out/share/zsh/${pname}
   '';
 
   meta = {
