@@ -19,8 +19,13 @@ stdenv.mkDerivation (finalAttrs: {
   dontBuild = true;
 
   installPhase = ''
-    mkdir -p $out/share/zsh-vi-mode
-    cp *.zsh $out/share/zsh-vi-mode/
+    plugindir=$out/share/zsh/plugins/zsh-vi-mode
+
+    mkdir -p $plugindir
+    cp *.zsh $plugindir/
+
+    # Keep the previous nixpkgs path for users sourcing it directly.
+    ln -s $plugindir $out/share/zsh-vi-mode
   '';
 
   meta = {
