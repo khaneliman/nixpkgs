@@ -17,7 +17,13 @@ stdenv.mkDerivation rec {
 
   strictDeps = true;
   installPhase = ''
-    install -D zsh-system-clipboard.zsh $out/share/zsh/${pname}/zsh-system-clipboard.zsh
+    plugindir=$out/share/zsh/plugins/${pname}
+
+    install -D zsh-system-clipboard.zsh $plugindir/zsh-system-clipboard.zsh
+    ln -s zsh-system-clipboard.zsh $plugindir/zsh-system-clipboard.plugin.zsh
+
+    # Keep the previous nixpkgs path for users sourcing it directly.
+    ln -s $plugindir $out/share/zsh/${pname}
   '';
 
   meta = {
