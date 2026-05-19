@@ -19,8 +19,13 @@ stdenvNoCC.mkDerivation rec {
   nativeBuildInputs = [ installShellFiles ];
 
   installPhase = ''
-    install -Dm755 wd.plugin.zsh $out/share/wd/wd.plugin.zsh
-    install -Dm755 wd.sh $out/share/wd/wd.sh
+    plugindir=$out/share/zsh/plugins/wd
+
+    install -Dm755 wd.plugin.zsh $plugindir/wd.plugin.zsh
+    install -Dm755 wd.sh $plugindir/wd.sh
+
+    # Keep the previous nixpkgs path for users sourcing it directly.
+    ln -s $plugindir $out/share/wd
     installManPage wd.1
     installShellCompletion --zsh _wd.sh
   '';
