@@ -39,9 +39,14 @@ stdenvNoCC.mkDerivation (finalAttrs: {
   installPhase = ''
     runHook preInstall
 
+    plugindir=$out/share/zsh/plugins/zsh-forgit
+
     install -D bin/git-forgit $out/bin/git-forgit
     install -D completions/_git-forgit $out/share/zsh/site-functions/_git-forgit
-    install -D forgit.plugin.zsh $out/share/zsh/zsh-forgit/forgit.plugin.zsh
+    install -D forgit.plugin.zsh $plugindir/forgit.plugin.zsh
+
+    # Keep the previous nixpkgs path for users sourcing it directly.
+    ln -s $plugindir $out/share/zsh/zsh-forgit
     wrapProgram $out/bin/git-forgit \
       --prefix PATH : ${
         lib.makeBinPath [
