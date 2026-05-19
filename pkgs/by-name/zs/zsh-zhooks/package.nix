@@ -18,7 +18,12 @@ stdenvNoCC.mkDerivation {
 
   installPhase = ''
     runHook preInstall
-    install -m755 -D zhooks.plugin.zsh --target-directory $out/share/zsh/zhooks
+    plugindir=$out/share/zsh/plugins/zsh-zhooks
+
+    install -m755 -D zhooks.plugin.zsh --target-directory $plugindir
+
+    # Keep the previous nixpkgs path for users sourcing it directly.
+    ln -s $plugindir $out/share/zsh/zhooks
     runHook postInstall
   '';
 
