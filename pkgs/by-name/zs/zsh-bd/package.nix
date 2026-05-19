@@ -21,11 +21,18 @@ stdenv.mkDerivation {
   installPhase = ''
     runHook preInstall
 
+    plugindir=$out/share/zsh/plugins/zsh-bd
+
     install -D bd.zsh \
-      $out/share/plugins/zsh-bd/bd.zsh
-    ln -s $out/share/plugins/zsh-bd/bd.zsh \
-      $out/share/plugins/zsh-bd/bd.plugin.zsh
-    ln -s $out/share/plugins/zsh-bd \
+      $plugindir/bd.zsh
+    ln -s $plugindir/bd.zsh \
+      $plugindir/bd.plugin.zsh
+
+    # Keep the previous nixpkgs paths for users sourcing them directly.
+    mkdir -p $out/share/plugins
+    ln -s $plugindir \
+      $out/share/plugins/zsh-bd
+    ln -s $plugindir \
       $out/share/zsh-bd
 
     runHook postInstall
