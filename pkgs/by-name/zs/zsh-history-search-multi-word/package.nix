@@ -20,10 +20,13 @@ stdenvNoCC.mkDerivation rec {
   dontBuild = true;
 
   installPhase = ''
-    plugindir="$out/share/zsh/${pname}"
+    plugindir="$out/share/zsh/plugins/${pname}"
 
     mkdir -p "$plugindir"
     cp -r -- history-* hsmw-* "$plugindir"/
+
+    # Keep the previous nixpkgs path for users sourcing it directly.
+    ln -s "$plugindir" "$out/share/zsh/${pname}"
   '';
 
   meta = {
