@@ -17,9 +17,14 @@ stdenvNoCC.mkDerivation rec {
 
   strictDeps = true;
   installPhase = ''
-    install -D zsh-autocomplete.plugin.zsh $out/share/zsh-autocomplete/zsh-autocomplete.plugin.zsh
-    cp -R Completions $out/share/zsh-autocomplete/Completions
-    cp -R Functions $out/share/zsh-autocomplete/Functions
+    plugindir=$out/share/zsh/plugins/zsh-autocomplete
+
+    install -D zsh-autocomplete.plugin.zsh $plugindir/zsh-autocomplete.plugin.zsh
+    cp -R Completions $plugindir/Completions
+    cp -R Functions $plugindir/Functions
+
+    # Keep the previous nixpkgs path for users sourcing it directly.
+    ln -s $plugindir $out/share/zsh-autocomplete
   '';
 
   meta = {
