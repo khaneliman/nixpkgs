@@ -19,8 +19,13 @@ stdenv.mkDerivation {
   dontBuild = true;
 
   installPhase = ''
-    mkdir -p $out/{bin,share}
-    cp -R $src $out/share/zsh-autoenv
+    plugindir=$out/share/zsh/plugins/zsh-autoenv
+
+    mkdir -p $out/{bin,share/zsh/plugins}
+    cp -R $src $plugindir
+
+    # Keep the previous nixpkgs path used by the NixOS zsh-autoenv module.
+    ln -s $plugindir $out/share/zsh-autoenv
 
     cat <<SCRIPT > $out/bin/zsh-autoenv-share
     #!${runtimeShell}
