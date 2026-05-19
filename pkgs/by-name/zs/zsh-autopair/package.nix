@@ -16,7 +16,14 @@ stdenv.mkDerivation rec {
   };
 
   installPhase = ''
-    install -D autopair.zsh $out/share/zsh/${pname}/autopair.zsh
+    plugindir=$out/share/zsh/plugins/${pname}
+
+    install -D autopair.zsh $plugindir/autopair.zsh
+    install -D autopair.plugin.zsh $plugindir/autopair.plugin.zsh
+    install -D zsh-autopair.plugin.zsh $plugindir/zsh-autopair.plugin.zsh
+
+    # Keep the previous nixpkgs path for users sourcing it directly.
+    ln -s $plugindir $out/share/zsh/${pname}
   '';
 
   meta = {
