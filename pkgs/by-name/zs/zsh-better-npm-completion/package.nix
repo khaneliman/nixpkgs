@@ -17,7 +17,12 @@ stdenv.mkDerivation {
 
   strictDeps = true;
   installPhase = ''
-    install -Dm 0644 zsh-better-npm-completion.plugin.zsh $out/share/zsh-better-npm-completion
+    plugindir=$out/share/zsh/plugins/zsh-better-npm-completion
+
+    install -Dm 0644 zsh-better-npm-completion.plugin.zsh $plugindir/zsh-better-npm-completion.plugin.zsh
+
+    # Keep the previous nixpkgs path for users sourcing it directly.
+    ln -s $plugindir $out/share/zsh-better-npm-completion
   '';
 
   meta = {
