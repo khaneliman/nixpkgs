@@ -18,12 +18,18 @@ stdenv.mkDerivation (finalAttrs: {
   dontBuild = true;
 
   installPhase = ''
-    mkdir -p $out/share/zsh/site-functions/
-    cp zsh-navigation-tools.plugin.zsh $out/share/zsh/site-functions/
-    cp n-* $out/share/zsh/site-functions/
-    cp znt-* $out/share/zsh/site-functions/
-    mkdir -p $out/share/zsh/site-functions/.config/znt
-    cp .config/znt/n-* $out/share/zsh/site-functions/.config/znt
+    plugindir=$out/share/zsh/plugins/zsh-navigation-tools
+
+    mkdir -p $plugindir
+    cp zsh-navigation-tools.plugin.zsh $plugindir/
+    cp n-* $plugindir/
+    cp znt-* $plugindir/
+    mkdir -p $plugindir/.config/znt
+    cp .config/znt/n-* $plugindir/.config/znt
+    mkdir -p $out/share/zsh/site-functions
+    ln -s $plugindir/n-* $plugindir/znt-* $out/share/zsh/site-functions/
+    ln -s $plugindir/.config $out/share/zsh/site-functions/.config
+    ln -s $plugindir/zsh-navigation-tools.plugin.zsh $out/share/zsh/site-functions/
   '';
 
   meta = {
