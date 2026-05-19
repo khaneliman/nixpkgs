@@ -21,6 +21,16 @@ stdenv.mkDerivation (finalAttrs: {
 
   installFlags = [ "PREFIX=$(out)" ];
 
+  postInstall = ''
+    plugindir=$out/share/zsh/plugins/zsh-syntax-highlighting
+
+    mkdir -p $out/share/zsh/plugins
+    mv $out/share/zsh-syntax-highlighting $plugindir
+
+    # Keep the previous nixpkgs path used by NixOS/Home Manager modules.
+    ln -s $plugindir $out/share/zsh-syntax-highlighting
+  '';
+
   meta = {
     description = "Fish shell like syntax highlighting for Zsh";
     homepage = "https://github.com/zsh-users/zsh-syntax-highlighting";
