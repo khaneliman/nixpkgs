@@ -19,8 +19,17 @@ stdenv.mkDerivation {
   dontConfigure = true;
   dontBuild = true;
   installPhase = ''
-    mkdir -p $out/share/zsh-defer
-    cp zsh-defer* $out/share/zsh-defer
+    plugindir=$out/share/zsh/plugins/zsh-defer
+
+    install -D zsh-defer.plugin.zsh $plugindir/zsh-defer.plugin.zsh
+    install -D zsh-defer $plugindir/zsh-defer
+    install -D zsh-defer $out/share/zsh/site-functions/zsh-defer
+    substituteInPlace $out/share/zsh/site-functions/zsh-defer \
+      --replace-fail 'source ''${functions_source[zsh-defer]:A:h}/zsh-defer.plugin.zsh' \
+      "source $plugindir/zsh-defer.plugin.zsh"
+
+    # Keep the previous nixpkgs path for users sourcing it directly.
+    ln -s $plugindir $out/share/zsh-defer
   '';
 
   meta = {
