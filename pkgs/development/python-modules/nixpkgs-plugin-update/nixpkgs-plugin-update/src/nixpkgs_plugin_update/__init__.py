@@ -41,6 +41,7 @@ VERSION_DATE_PATTERN = re.compile(r"(\d{4}-\d{2}-\d{2})$")
 VERSION_TAG_PATTERN = re.compile(r"^(.+?)-unstable-")
 NON_RELEASE_TAG_PREFIXES = ("pre-",)
 RELEASE_VERSION_PATTERN = re.compile(r"^[^\d]*(\d[\w.@+-]*)$")
+GITHUB_TAG_BATCH_SIZE = 50
 
 LOG_LEVELS = {
     logging.getLevelName(level): level
@@ -273,6 +274,8 @@ class RepoGitHub(Repo):
         self.owner = owner
         self.repo = repo
         self.token = None
+        self._latest_tag_loaded = False
+        self._latest_tag: str | None = None
         """Url to the repo"""
         super().__init__(self.url(""), branch)
         log.debug(
@@ -351,6 +354,10 @@ class RepoGitHub(Repo):
         with urllib.request.urlopen(req, timeout=10) as response:
             return json.load(response)
 
+    def set_latest_tag(self, latest_tag: str | None) -> None:
+        self._latest_tag_loaded = True
+        self._latest_tag = latest_tag
+
     @retry(urllib.error.URLError, tries=4, delay=3, backoff=2)
     def _get_recent_tags_from_atom(self) -> list[str]:
         tags_url = self.url("tags.atom")
@@ -393,6 +400,9 @@ class RepoGitHub(Repo):
 
     @retry(urllib.error.URLError, tries=4, delay=3, backoff=2)
     def get_latest_tag(self) -> str | None:
+        if self._latest_tag_loaded:
+            return self._latest_tag
+
         try:
             if not self.token or self.token == "":
                 return self._get_latest_tag_from_fallbacks()
@@ -539,6 +549,96 @@ class RepoGitHub(Repo):
       {ref_attr}
       hash = "{plugin.to_sri_hash()}";{submodule_attr}
     }}"""
+
+
+def preload_github_latest_tags(
+    plugin_descs: list["PluginDesc"],
+    token: str,
+) -> None:
+    if not token:
+        return
+
+    repos_by_key: dict[tuple[str, str], list[RepoGitHub]] = {}
+    for plugin_desc in plugin_descs:
+        repo = plugin_desc.repo
+        if isinstance(repo, RepoGitHub) and not repo._latest_tag_loaded:
+            repos_by_key.setdefault((repo.owner, repo.repo), []).append(repo)
+
+    repo_keys = list(repos_by_key)
+    for start in range(0, len(repo_keys), GITHUB_TAG_BATCH_SIZE):
+        chunk = repo_keys[start : start + GITHUB_TAG_BATCH_SIZE]
+        variable_defs = []
+        selections = []
+        variables = {}
+
+        for index, (owner, repo_name) in enumerate(chunk):
+            owner_var = f"owner{index}"
+            name_var = f"name{index}"
+            variable_defs.extend([f"${owner_var}: String!", f"${name_var}: String!"])
+            variables[owner_var] = owner
+            variables[name_var] = repo_name
+            selections.append(
+                f"""
+                r{index}: repository(owner: ${owner_var}, name: ${name_var}) {{
+                  refs(refPrefix: "refs/tags/", first: 20, orderBy: {{field: TAG_COMMIT_DATE, direction: DESC}}) {{
+                    nodes {{
+                      name
+                    }}
+                  }}
+                }}
+                """
+            )
+
+        query = (
+            f"query GetRecentTags({', '.join(variable_defs)}) {{"
+            + "\n".join(selections)
+            + "}"
+        )
+
+        try:
+            req = make_request("https://api.github.com/graphql", token)
+            req.add_header("Content-Type", "application/json")
+            req.data = json.dumps({"query": query, "variables": variables}).encode(
+                "utf-8"
+            )
+            with urllib.request.urlopen(req, timeout=10) as response:
+                response_data = json.load(response)
+        except urllib.error.HTTPError as e:
+            if e.code in (401, 403):
+                raise RuntimeError(
+                    f"GitHub GraphQL auth failed ({e.code}); refresh GITHUB_TOKEN"
+                ) from e
+            log.warning("Failed to batch-fetch GitHub tags: HTTP %s", e.code)
+            continue
+        except urllib.error.URLError as e:
+            log.warning("Failed to batch-fetch GitHub tags: %s", e)
+            continue
+
+        errors = response_data.get("errors", [])
+        if any(
+            error.get("code") == "graphql_rate_limit"
+            or error.get("type") == "RATE_LIMIT"
+            for error in errors
+        ):
+            log.warning("GitHub GraphQL rate limit hit while batch-fetching tags")
+            continue
+        if errors:
+            log.warning("GraphQL errors while batch-fetching tags: %s", errors)
+
+        data = response_data.get("data") or {}
+        for index, repo_key in enumerate(chunk):
+            repo_data = data.get(f"r{index}")
+            if repo_data is None:
+                continue
+
+            nodes = repo_data.get("refs", {}).get("nodes", [])
+            recent_tags = [node["name"] for node in nodes if "name" in node]
+            latest_tag = first_release_tag(recent_tags)
+            if latest_tag is None and recent_tags:
+                latest_tag = recent_tags[0]
+
+            for repo in repos_by_key[repo_key]:
+                repo.set_latest_tag(latest_tag)
 
 
 @dataclass(frozen=True)
@@ -966,6 +1066,8 @@ class Editor:
                     "(" + str(input_file) + ")\n\n"
                 )
                 return {}, []
+
+            preload_github_latest_tags(plugins_to_update, config.github_token)
 
             try:
                 pool = Pool(processes=config.proc)
