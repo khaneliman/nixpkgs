@@ -88,6 +88,12 @@ class FetchConfig:
     github_token: str
 
 
+@dataclass
+class GitHubRefInfo:
+    commit: str
+    date: datetime
+
+
 def make_request(url: str, token=None) -> urllib.request.Request:
     headers = {}
     if token:
@@ -152,6 +158,50 @@ def tag_from_github_atom_href(href: str) -> str | None:
 
     tag_name = Path(path).name
     return unquote(tag_name) if tag_name else None
+
+
+def parse_github_datetime(value: str | None) -> datetime | None:
+    if value is None:
+        return None
+    return datetime.strptime(value, "%Y-%m-%dT%H:%M:%SZ")
+
+
+def github_ref_info_from_target(target: dict[str, Any] | None) -> GitHubRefInfo | None:
+    if target is None:
+        return None
+
+    commit = target.get("oid")
+    date = parse_github_datetime(target.get("committedDate"))
+    if commit is not None and date is not None:
+        return GitHubRefInfo(commit, date)
+
+    nested_target = target.get("target")
+    if not isinstance(nested_target, dict):
+        return None
+
+    commit = nested_target.get("oid")
+    date = parse_github_datetime(nested_target.get("committedDate"))
+    if commit is not None and date is not None:
+        return GitHubRefInfo(commit, date)
+
+    return None
+
+
+def is_github_graphql_rate_limit(errors: list[dict[str, Any]]) -> bool:
+    return any(
+        error.get("code") == "graphql_rate_limit" or error.get("type") == "RATE_LIMIT"
+        for error in errors
+    )
+
+
+def is_github_rate_limit_http_error(error: urllib.error.HTTPError) -> bool:
+    if error.code == 429:
+        return True
+    if error.code != 403:
+        return False
+
+    body = error.read().decode("utf-8", errors="replace").lower()
+    return "rate limit" in body or "rate-limit" in body
 
 
 class Repo:
@@ -276,6 +326,11 @@ class RepoGitHub(Repo):
         self.token = None
         self._latest_tag_loaded = False
         self._latest_tag: str | None = None
+        self._latest_commit: GitHubRefInfo | None = None
+        self._refs: dict[str, GitHubRefInfo] = {}
+        self._has_submodules: bool | None = None
+        self._license_spdx_id_loaded = False
+        self._license_spdx_id: str | None = None
         """Url to the repo"""
         super().__init__(self.url(""), branch)
         log.debug(
@@ -292,6 +347,9 @@ class RepoGitHub(Repo):
 
     @retry(urllib.error.URLError, tries=4, delay=3, backoff=2)
     def has_submodules(self) -> bool:
+        if self._has_submodules is not None:
+            return self._has_submodules
+
         try:
             req = make_request(self.url(f"blob/{self.branch}/.gitmodules"), self.token)
             urllib.request.urlopen(req, timeout=10).close()
@@ -304,6 +362,9 @@ class RepoGitHub(Repo):
 
     @retry(urllib.error.URLError, tries=4, delay=3, backoff=2)
     def latest_commit(self) -> tuple[str, datetime]:
+        if self._latest_commit is not None:
+            return self._latest_commit.commit, self._latest_commit.date
+
         commit_url = self.url(f"commits/{self.branch}.atom")
         log.debug("Sending request to %s", commit_url)
         commit_req = make_request(commit_url, self.token)
@@ -332,6 +393,8 @@ class RepoGitHub(Repo):
     def resolve_ref(self, ref: str) -> tuple[str, datetime]:
         if ref == self.branch:
             return self.latest_commit()
+        if ref_info := self._refs.get(ref):
+            return ref_info.commit, ref_info.date
         self._check_ref_redirect(ref)
         return super().resolve_ref(ref)
 
@@ -357,6 +420,21 @@ class RepoGitHub(Repo):
     def set_latest_tag(self, latest_tag: str | None) -> None:
         self._latest_tag_loaded = True
         self._latest_tag = latest_tag
+
+    def set_latest_commit(self, commit: str | None, date: datetime | None) -> None:
+        if commit is not None and date is not None:
+            self._latest_commit = GitHubRefInfo(commit, date)
+
+    def set_ref(self, ref: str, commit: str | None, date: datetime | None) -> None:
+        if commit is not None and date is not None:
+            self._refs[ref] = GitHubRefInfo(commit, date)
+
+    def set_has_submodules(self, has_submodules: bool | None) -> None:
+        self._has_submodules = has_submodules
+
+    def set_license_spdx_id(self, license_spdx_id: str | None) -> None:
+        self._license_spdx_id_loaded = True
+        self._license_spdx_id = license_spdx_id
 
     @retry(urllib.error.URLError, tries=4, delay=3, backoff=2)
     def _get_recent_tags_from_atom(self) -> list[str]:
@@ -424,11 +502,7 @@ class RepoGitHub(Repo):
             )
 
             if "errors" in data:
-                if any(
-                    error.get("code") == "graphql_rate_limit"
-                    or error.get("type") == "RATE_LIMIT"
-                    for error in data["errors"]
-                ):
+                if is_github_graphql_rate_limit(data["errors"]):
                     log.warning(
                         "GitHub GraphQL rate limit hit for %s/%s, falling back to tag feeds",
                         self.owner,
@@ -455,6 +529,13 @@ class RepoGitHub(Repo):
             return latest_tag if latest_tag is not None else recent_tags[0]
 
         except urllib.error.HTTPError as e:
+            if is_github_rate_limit_http_error(e):
+                log.warning(
+                    "GitHub GraphQL rate limit hit for %s/%s, falling back to tag feeds",
+                    self.owner,
+                    self.repo,
+                )
+                return self._get_latest_tag_from_fallbacks()
             if e.code in (401, 403):
                 raise RuntimeError(
                     "GitHub GraphQL auth failed for "
@@ -497,6 +578,9 @@ class RepoGitHub(Repo):
         return loaded["hash"]
 
     def get_license_spdx_id(self, fallback_license: str | None = None) -> str | None:
+        if self._license_spdx_id_loaded:
+            return self._license_spdx_id or fallback_license
+
         license_url = f"https://api.github.com/repos/{self.owner}/{self.repo}/license"
         log.debug("Fetching license metadata from %s", license_url)
 
@@ -551,7 +635,7 @@ class RepoGitHub(Repo):
     }}"""
 
 
-def preload_github_latest_tags(
+def preload_github_metadata(
     plugin_descs: list["PluginDesc"],
     token: str,
 ) -> None:
@@ -580,10 +664,38 @@ def preload_github_latest_tags(
             selections.append(
                 f"""
                 r{index}: repository(owner: ${owner_var}, name: ${name_var}) {{
+                  defaultBranchRef {{
+                    target {{
+                      oid
+                      ... on Commit {{
+                        committedDate
+                      }}
+                    }}
+                  }}
                   refs(refPrefix: "refs/tags/", first: 20, orderBy: {{field: TAG_COMMIT_DATE, direction: DESC}}) {{
                     nodes {{
                       name
+                      target {{
+                        oid
+                        ... on Commit {{
+                          committedDate
+                        }}
+                        ... on Tag {{
+                          target {{
+                            oid
+                            ... on Commit {{
+                              committedDate
+                            }}
+                          }}
+                        }}
+                      }}
                     }}
+                  }}
+                  gitmodules: object(expression: "HEAD:.gitmodules") {{
+                    oid
+                  }}
+                  licenseInfo {{
+                    spdxId
                   }}
                 }}
                 """
@@ -604,6 +716,12 @@ def preload_github_latest_tags(
             with urllib.request.urlopen(req, timeout=10) as response:
                 response_data = json.load(response)
         except urllib.error.HTTPError as e:
+            if is_github_rate_limit_http_error(e):
+                log.warning(
+                    "GitHub GraphQL rate limit hit while batch-fetching tags; "
+                    "falling back to per-repository fetches"
+                )
+                continue
             if e.code in (401, 403):
                 raise RuntimeError(
                     f"GitHub GraphQL auth failed ({e.code}); refresh GITHUB_TOKEN"
@@ -615,12 +733,11 @@ def preload_github_latest_tags(
             continue
 
         errors = response_data.get("errors", [])
-        if any(
-            error.get("code") == "graphql_rate_limit"
-            or error.get("type") == "RATE_LIMIT"
-            for error in errors
-        ):
-            log.warning("GitHub GraphQL rate limit hit while batch-fetching tags")
+        if is_github_graphql_rate_limit(errors):
+            log.warning(
+                "GitHub GraphQL rate limit hit while batch-fetching tags; "
+                "falling back to per-repository fetches"
+            )
             continue
         if errors:
             log.warning("GraphQL errors while batch-fetching tags: %s", errors)
@@ -631,14 +748,46 @@ def preload_github_latest_tags(
             if repo_data is None:
                 continue
 
-            nodes = repo_data.get("refs", {}).get("nodes", [])
+            default_branch_ref = repo_data.get("defaultBranchRef") or {}
+            default_branch_info = github_ref_info_from_target(
+                default_branch_ref.get("target")
+            )
+
+            nodes = (repo_data.get("refs") or {}).get("nodes", [])
             recent_tags = [node["name"] for node in nodes if "name" in node]
             latest_tag = first_release_tag(recent_tags)
             if latest_tag is None and recent_tags:
                 latest_tag = recent_tags[0]
+            latest_tag_node = next(
+                (node for node in nodes if node.get("name") == latest_tag),
+                None,
+            )
+            latest_tag_info = (
+                github_ref_info_from_target(latest_tag_node.get("target"))
+                if latest_tag_node is not None
+                else None
+            )
+
+            license_info = repo_data.get("licenseInfo") or {}
+            license_spdx_id = license_info.get("spdxId")
+            if not license_spdx_id or license_spdx_id == "NOASSERTION":
+                license_spdx_id = None
 
             for repo in repos_by_key[repo_key]:
                 repo.set_latest_tag(latest_tag)
+                if repo.branch == "HEAD" and default_branch_info is not None:
+                    repo.set_latest_commit(
+                        default_branch_info.commit, default_branch_info.date
+                    )
+                if latest_tag is not None and latest_tag_info is not None:
+                    repo.set_ref(
+                        f"{GIT_TAGS_PREFIX}{latest_tag}",
+                        latest_tag_info.commit,
+                        latest_tag_info.date,
+                    )
+                if repo.branch == "HEAD":
+                    repo.set_has_submodules(repo_data.get("gitmodules") is not None)
+                repo.set_license_spdx_id(license_spdx_id)
 
 
 @dataclass(frozen=True)
@@ -1067,7 +1216,7 @@ class Editor:
                 )
                 return {}, []
 
-            preload_github_latest_tags(plugins_to_update, config.github_token)
+            preload_github_metadata(plugins_to_update, config.github_token)
 
             try:
                 pool = Pool(processes=config.proc)
