@@ -12,13 +12,13 @@ discover_modules() {
     while IFS= read -r lua_file; do
         # Ignore infrastructure directories and non-runtime module files
         case "/$lua_file/" in
-            */debug/* | */script/* | */scripts/* | */test/* | */tests/* | */spec/* | */_meta/*)
+            */debug/* | */script/* | */scripts/* | */test/* | */tests/* | */spec/* | */_meta/* | */_test/* | */docgen/* | */examples/* | */minit/* | */minitest/*)
                 continue
                 ;;
         esac
 
         case "${lua_file##*/}" in
-            *meta.lua | *_spec.lua | *.spec.lua | *.test.lua)
+            *meta.lua | *_spec.lua | *.spec.lua | *.test.lua | docs.lua | docgen.lua | minidoc.lua | minimal*.lua | minit*.lua | repro*.lua | vimdoc*.lua | *-assertions.lua)
                 continue
                 ;;
         esac
@@ -36,9 +36,6 @@ discover_modules() {
             # Replace slashes with dots to form the module name
             module_name="${BASH_REMATCH[1]//\//.}"
             modules+=("$module_name")
-        elif [[ "$lua_file" =~ ^([^/.][^/]*)\.lua$ ]]; then
-            echo "$lua_file"
-            modules+=("${BASH_REMATCH[1]}")
         fi
     done < <(find "$out" -name '*.lua' -exec realpath --relative-to="$out" {} +)
 

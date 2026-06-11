@@ -531,31 +531,41 @@ pkgs.lib.recurseIntoAttrs rec {
     version = "0";
     src = runCommandLocal "neovim-require-check-ignores-test-modules-src" { } ''
       mkdir -p \
-        "$out/lua/require-check-ignores"/{debug,script,scripts,test,tests,spec,_meta} \
+        "$out/lua/require-check-ignores"/{debug,script,scripts,test,tests,spec,_meta,_test,docgen,examples,minit,minitest} \
         "$out/lua/require-check-ignores"
       cat > "$out/lua/require-check-ignores/init.lua" <<'EOF'
       return {}
       EOF
-      for dir in debug script scripts test tests spec _meta; do
+      for dir in debug script scripts test tests spec _meta _test docgen examples minit minitest; do
         cat > "$out/lua/require-check-ignores/$dir/failing.lua" <<EOF
       error("excluded $dir directory was required")
       EOF
       done
-      cat > "$out/lua/require-check-ignores/failing_meta.lua" <<'EOF'
-      error("excluded _meta module was required")
+      for file in \
+        docs.lua \
+        docgen.lua \
+        failing_meta.lua \
+        failing_spec.lua \
+        failing.spec.lua \
+        failing.test.lua \
+        meta.lua \
+        minidoc.lua \
+        minimal.lua \
+        minitest.lua \
+        neotest-jest-assertions.lua \
+        repro.lua \
+        repro_blink.lua \
+        vimdoc-gen.lua \
+        vimdocrc.lua; do
+        cat > "$out/lua/require-check-ignores/$file" <<EOF
+      error("excluded $file module was required")
       EOF
-      cat > "$out/lua/require-check-ignores/failing_spec.lua" <<'EOF'
-      error("excluded _spec module was required")
+      done
+      for file in repro.lua minimal.lua; do
+        cat > "$out/$file" <<EOF
+      error("root-level $file module was required")
       EOF
-      cat > "$out/lua/require-check-ignores/failing.spec.lua" <<'EOF'
-      error("excluded .spec module was required")
-      EOF
-      cat > "$out/lua/require-check-ignores/failing.test.lua" <<'EOF'
-      error("excluded .test module was required")
-      EOF
-      cat > "$out/lua/require-check-ignores/meta.lua" <<'EOF'
-      error("excluded meta module was required")
-      EOF
+      done
     '';
   };
 
