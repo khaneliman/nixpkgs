@@ -81,6 +81,29 @@ run_require_checks() {
     packPathDir="$nvimDataDir/site"
     packdir="$nvimDataDir/site/pack/nvimRequireCheckHook/opt"
     mkdir -p "$packdir"
+    local -a pluginInputPackaddArgs=()
+    local -A pluginInputPackaddSeen=()
+    local pluginInputPackaddCommand=""
+    local pluginInputIndex=0
+    local pluginInput
+    local pluginInputName
+    for pluginInput in "${dependencies[@]}" "${nativeBuildInputs[@]}" "${buildInputs[@]}"; do
+        if [ ! -d "$pluginInput/plugin" ] || [ -n "${pluginInputPackaddSeen[$pluginInput]:-}" ]; then
+            continue
+        fi
+        pluginInputPackaddSeen[$pluginInput]=1
+        pluginInputIndex=$((pluginInputIndex + 1))
+        pluginInputName="plugin-input-$pluginInputIndex"
+        ln -s "$pluginInput" "$packdir/$pluginInputName"
+        if [ -z "$pluginInputPackaddCommand" ]; then
+            pluginInputPackaddCommand="packadd $pluginInputName"
+        else
+            pluginInputPackaddCommand="$pluginInputPackaddCommand | packadd $pluginInputName"
+        fi
+    done
+    if [ -n "$pluginInputPackaddCommand" ]; then
+        pluginInputPackaddArgs=(--cmd "$pluginInputPackaddCommand")
+    fi
     ln -s "$out" "$packdir/testPlugin"
 
     for name in "${nvimRequireCheck[@]}"; do
@@ -102,6 +125,7 @@ run_require_checks() {
                 --cmd "set rtp+=${checkInputs// /,}" \
                 "${luaPathArgs[@]}" \
                 --cmd "set packpath^=$packPathDir" \
+                "${pluginInputPackaddArgs[@]}" \
                 --cmd "packadd testPlugin" \
                 --cmd "lua require('$name')"; then
                 check_passed=true
