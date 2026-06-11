@@ -590,6 +590,80 @@ pkgs.lib.recurseIntoAttrs rec {
     '';
   };
 
+  nvim_require_check_dependency_plugin = vimUtils.buildVimPlugin {
+    pname = "neovim-require-check-dependency-plugin-test";
+    version = "0";
+    src = runCommandLocal "neovim-require-check-dependency-plugin-src" { } ''
+      mkdir -p "$out/plugin"
+      cat > "$out/plugin/require-check-dependency.vim" <<'EOF'
+      let g:require_check_dependency_loaded = 1
+      EOF
+    '';
+  };
+
+  nvim_require_check_packadd_dependencies = vimUtils.buildVimPlugin {
+    pname = "neovim-require-check-packadd-dependencies-test";
+    version = "0";
+    src = runCommandLocal "neovim-require-check-packadd-dependencies-src" { } ''
+      mkdir -p "$out/lua/require-check-packadd-dependencies"
+      cat > "$out/lua/require-check-packadd-dependencies/init.lua" <<'EOF'
+      if vim.g.require_check_dependency_loaded ~= 1 then
+        error("dependency plugin script was not sourced")
+      end
+      return {}
+      EOF
+    '';
+    dependencies = [ nvim_require_check_dependency_plugin ];
+  };
+
+  nvim_require_check_packadd_check_inputs = vimUtils.buildVimPlugin {
+    pname = "neovim-require-check-packadd-check-inputs-test";
+    version = "0";
+    src = runCommandLocal "neovim-require-check-packadd-check-inputs-src" { } ''
+      mkdir -p "$out/lua/require-check-packadd-check-inputs"
+      cat > "$out/lua/require-check-packadd-check-inputs/init.lua" <<'EOF'
+      if vim.g.require_check_dependency_loaded ~= 1 then
+        error("check input plugin script was not sourced")
+      end
+      return {}
+      EOF
+    '';
+    checkInputs = [ nvim_require_check_dependency_plugin ];
+  };
+
+  nvim_require_check_packadd_many_check_inputs =
+    let
+      pluginInput =
+        index:
+        vimUtils.buildVimPlugin {
+          pname = "neovim-require-check-plugin-input-${toString index}-test";
+          version = "0";
+          src = runCommandLocal "neovim-require-check-plugin-input-${toString index}-src" { } ''
+            mkdir -p "$out/plugin"
+            cat > "$out/plugin/require-check-plugin-input-${toString index}.vim" <<'EOF'
+            let g:require_check_plugin_input_${toString index}_loaded = 1
+            EOF
+          '';
+        };
+    in
+    vimUtils.buildVimPlugin {
+      pname = "neovim-require-check-packadd-many-check-inputs-test";
+      version = "0";
+      src = runCommandLocal "neovim-require-check-packadd-many-check-inputs-src" { } ''
+        mkdir -p "$out/lua/require-check-packadd-many-check-inputs"
+        cat > "$out/lua/require-check-packadd-many-check-inputs/init.lua" <<'EOF'
+        for index = 0, 7 do
+          local name = "require_check_plugin_input_" .. index .. "_loaded"
+          if vim.g[name] ~= 1 then
+            error(name .. " plugin script was not sourced")
+          end
+        end
+        return {}
+        EOF
+      '';
+      checkInputs = builtins.genList pluginInput 8;
+    };
+
   nvim_require_check_timeout = testers.testBuildFailure (vimUtils.buildVimPlugin {
     pname = "neovim-require-check-timeout-test";
     version = "0";
