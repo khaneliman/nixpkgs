@@ -172,7 +172,7 @@ assertNoAdditions {
       vim-rhubarb
       plenary-nvim
     ];
-    nvimSkipModules = [
+    nvimSkipModules = lib.optionals stdenv.hostPlatform.isDarwin [
       # Address in use error from fzf-lua on darwin
       # https://github.com/NixOS/nixpkgs/issues/431458
       "advanced_git_search.fzf.previewers.init"
@@ -188,7 +188,7 @@ assertNoAdditions {
       telescope-nvim
       fzf-lua
     ];
-    nvimSkipModules = [
+    nvimSkipModules = lib.optionals stdenv.hostPlatform.isDarwin [
       # Address in use error from fzf-lua on darwin
       # https://github.com/NixOS/nixpkgs/issues/431458
       "aerial.fzf-lua"
@@ -1572,7 +1572,9 @@ assertNoAdditions {
 
   fzf-lua = super.fzf-lua.overrideAttrs {
     runtimeDeps = [ fzf ];
-    nvimSkipModules = [
+    nvimSkipModules = lib.optionals stdenv.hostPlatform.isDarwin [
+      # Address in use error from fzf-lua on darwin
+      # https://github.com/NixOS/nixpkgs/issues/431458
       "fzf-lua.spawn"
       "fzf-lua.rpc"
       "fzf-lua.types"
@@ -1796,7 +1798,7 @@ assertNoAdditions {
       fzf-lua
       telescope-nvim
     ];
-    nvimSkipModules = [
+    nvimSkipModules = lib.optionals stdenv.hostPlatform.isDarwin [
       # Address in use error from fzf-lua on darwin
       # https://github.com/NixOS/nixpkgs/issues/431458
       "himalaya.folder.pickers.fzflua"
@@ -3577,6 +3579,8 @@ assertNoAdditions {
     nvimSkipModules = [
       # Issue reproduction file
       "minimal"
+    ]
+    ++ lib.optionals stdenv.hostPlatform.isDarwin [
       # Address in use error from fzf-lua on darwin
       # https://github.com/NixOS/nixpkgs/issues/431458
       "obsidian.picker._fzf"
@@ -4541,13 +4545,15 @@ assertNoAdditions {
 
   todo-comments-nvim = super.todo-comments-nvim.overrideAttrs {
     checkInputs = with self; [
+      # Optional fzf-lua integration
+      fzf-lua
       # Optional trouble integration
       trouble-nvim
     ];
     dependencies = [ self.plenary-nvim ];
-    nvimSkipModules = [
-      # Optional fzf-lua integration
-      # fzf-lua server must be running
+    nvimSkipModules = lib.optionals stdenv.hostPlatform.isDarwin [
+      # Address in use error from fzf-lua on darwin
+      # https://github.com/NixOS/nixpkgs/issues/431458
       "todo-comments.fzf"
     ];
   };
@@ -6105,7 +6111,7 @@ assertNoAdditions {
       snacks-nvim
       telescope-nvim
     ];
-    nvimSkipModules = [
+    nvimSkipModules = lib.optionals stdenv.hostPlatform.isDarwin [
       # Address in use error from fzf-lua on darwin
       # https://github.com/NixOS/nixpkgs/issues/431458
       "zk.pickers.fzf_lua"
