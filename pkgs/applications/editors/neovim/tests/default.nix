@@ -589,4 +589,19 @@ pkgs.lib.recurseIntoAttrs rec {
       EOF
     '';
   };
+
+  nvim_require_check_timeout = testers.testBuildFailure (vimUtils.buildVimPlugin {
+    pname = "neovim-require-check-timeout-test";
+    version = "0";
+    src = runCommandLocal "neovim-require-check-timeout-src" { } ''
+      mkdir -p "$out/lua"
+      cat > "$out/lua/require-check-timeout.lua" <<'EOF'
+      vim.wait(3000, function()
+        return false
+      end)
+      return {}
+      EOF
+    '';
+    nvimRequireCheckTimeout = "1s";
+  });
 }

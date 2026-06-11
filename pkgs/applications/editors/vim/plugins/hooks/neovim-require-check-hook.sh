@@ -55,6 +55,7 @@ run_require_checks() {
     check_passed=false
     failed_modules=()
     successful_modules=()
+    local requireCheckTimeout="${nvimRequireCheckTimeout:-60s}"
 
     export HOME="$TMPDIR"
     local deps="${dependencies[*]}"
@@ -94,7 +95,8 @@ run_require_checks() {
 
         if [ "$skip" = false ]; then
             echo "Attempting to require module: $name"
-            if @nvimBinary@ -es --headless -n -u NONE -i NONE --clean -V1 \
+            if timeout --foreground "$requireCheckTimeout" \
+                @nvimBinary@ -es --headless -n -u NONE -i NONE --clean -V1 \
                 --cmd "set rtp+=${deps// /,}" \
                 --cmd "set rtp+=${nativeCheckInputs// /,}" \
                 --cmd "set rtp+=${checkInputs// /,}" \
