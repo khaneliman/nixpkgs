@@ -2702,11 +2702,6 @@ assertNoAdditions {
     # Optional diffview integration
     checkInputs = [ self.diffview-nvim ];
     dependencies = [ self.plenary-nvim ];
-    nvimSkipModules = [
-      # E5108: Error executing lua ...vim-2024-06-13/lua/diffview/api/views/diff/diff_view.lua:13: attempt to index global 'DiffviewGlobal' (a nil value)
-      # Requires diffview-nvim's plugin script to be sourced.
-      "neogit.integrations.diffview"
-    ];
   };
 
   neoinclude-vim = super.neoinclude-vim.overrideAttrs (old: {
