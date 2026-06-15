@@ -1506,7 +1506,6 @@ def update_plugins(editor: Editor, args):
             sys.exit(1)
 
     if redirects:
-        update()
         if autocommit:
             assert editor.nixpkgs_repo is not None
             commit(
