@@ -84,7 +84,7 @@ def retry(ExceptionToCheck: Any, tries: int = 4, delay: float = 3, backoff: floa
 @dataclass
 class FetchConfig:
     proc: int
-    github_token: str
+    github_token: str | None
 
 
 def make_request(url: str, token=None) -> urllib.request.Request:
@@ -509,6 +509,8 @@ class RepoGitHub(Repo):
                 return None
             return log_fetch_failure(f"HTTP {e.code}")
         except urllib.error.URLError as e:
+            return log_fetch_failure(str(e))
+        except (OSError, json.JSONDecodeError) as e:
             return log_fetch_failure(str(e))
 
         license_info = data.get("license")
@@ -1199,11 +1201,7 @@ def prefetch_plugin(
     )
     if cached_plugin is not None:
         log.debug(f"Cache hit for {p.name}!")
-        license_spdx_id = (
-            cached_plugin.license
-            or (current_plugin.license if current_plugin else None)
-            or p.repo.get_license_spdx_id()
-        )
+        license_spdx_id = resolve_plugin_license(p, current_plugin, cached_plugin)
         return (
             replace(
                 cached_plugin,
@@ -1225,11 +1223,7 @@ def prefetch_plugin(
         if source_tag
         else p.repo.prefetch(commit, has_submodules=has_submodules)
     )
-    license_spdx_id = (
-        current_plugin.license
-        if current_plugin and current_plugin.license
-        else p.repo.get_license_spdx_id()
-    )
+    license_spdx_id = resolve_plugin_license(p, current_plugin)
 
     return (
         Plugin(
@@ -1245,6 +1239,20 @@ def prefetch_plugin(
         ),
         p.repo.redirect,
     )
+
+
+def resolve_plugin_license(
+    p: PluginDesc,
+    current_plugin: Plugin | None,
+    cached_plugin: Plugin | None = None,
+) -> str | None:
+    if cached_plugin is not None and cached_plugin.license:
+        return cached_plugin.license
+
+    if current_plugin is not None:
+        return current_plugin.license
+
+    return p.repo.get_license_spdx_id()
 
 
 def print_download_error(plugin: PluginDesc, ex: Exception):
@@ -1411,12 +1419,12 @@ def rewrite_input(
             log.info("Resolving deprecated plugin %s -> %s", pdesc.name, new_repo.name)
             new_pdesc = PluginDesc(new_repo, pdesc.branch, pdesc.alias)
 
-            old_plugin, _ = prefetch_plugin(pdesc)
-            new_plugin, _ = prefetch_plugin(new_pdesc)
+            old_name = pdesc.name.replace(".", "-")
+            new_name = new_pdesc.name.replace(".", "-")
 
-            if old_plugin.normalized_name != new_plugin.normalized_name:
-                deprecations[old_plugin.normalized_name] = {
-                    "new": new_plugin.normalized_name,
+            if old_name != new_name:
+                deprecations[old_name] = {
+                    "new": new_name,
                     "date": cur_date_iso,
                 }
 
