@@ -267,11 +267,20 @@ stdenv.mkDerivation (
       mkdir -p $out/lib/nvim/parser
     ''
     + lib.concatStrings (
-      lib.mapAttrsToList (language: grammar: ''
-        ln -sf \
-          ${grammar}/parser \
-          $out/lib/nvim/parser/${language}.so
-      '') finalAttrs.treesitter-parsers
+      lib.mapAttrsToList (
+        language: grammar:
+        # wasi-built grammars install parser.wasm; native builds install parser.
+        # neovim auto-discovers parser/{lang}.* on runtimepath, so a renamed
+        # .wasm loads with no extra wiring.
+        if grammar.stdenv.hostPlatform.isWasi then
+          ''
+            ln -sf ${grammar}/parser.wasm $out/lib/nvim/parser/${language}.wasm
+          ''
+        else
+          ''
+            ln -sf ${grammar}/parser $out/lib/nvim/parser/${language}.so
+          ''
+      ) finalAttrs.treesitter-parsers
     );
 
     shellHook = ''
