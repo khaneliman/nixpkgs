@@ -1,18 +1,21 @@
-{ lib }:
+{
+  lib,
+  neovimUtils,
+}:
 self: super:
 let
-  inherit (self) nvim-treesitter;
+  inherit (neovimUtils) treesitter;
 
   withPlugins =
     f:
     let
-      from-main = self.nvim-treesitter.withPlugins f;
+      from-main = treesitter.withPlugins f;
     in
     self.nvim-treesitter-legacy.overrideAttrs {
       passthru = { inherit (from-main) dependencies; };
     };
 
-  withAllGrammars = withPlugins (_: nvim-treesitter.allGrammars);
+  withAllGrammars = withPlugins (_: treesitter.allGrammars);
 in
 
 {
@@ -21,13 +24,13 @@ in
   '';
 
   passthru = (super.nvim-treesitter-legacy.passthru or { }) // {
-    inherit (nvim-treesitter)
+    inherit (treesitter)
       builtGrammars
       allGrammars
-      grammarToPlugin
       grammarPlugins
       parsers
       ;
+    inherit (neovimUtils) grammarToPlugin;
     inherit
       withPlugins
       withAllGrammars

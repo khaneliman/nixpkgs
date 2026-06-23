@@ -282,8 +282,8 @@ let
         nvimGrammars = lib.mapAttrsToList (
           name: value:
           value.origGrammar
-            or (throw "additions to `pkgs.vimPlugins.nvim-treesitter.grammarPlugins` set should be passed through `pkgs.neovimUtils.grammarToPlugin` first")
-        ) vimPlugins.nvim-treesitter.grammarPlugins;
+            or (throw "additions to `pkgs.neovimUtils.treesitter.grammarPlugins` set should be passed through `pkgs.neovimUtils.grammarToPlugin` first")
+        ) treesitter.grammarPlugins;
         isNvimGrammar = x: builtins.elem x nvimGrammars;
 
         toNvimTreesitterGrammar = makeSetupHook {
@@ -334,6 +334,11 @@ let
         })
       ));
 
+  treesitter = callPackage ./treesitter {
+    inherit grammarToPlugin;
+    nvim-treesitter = vimPlugins.nvim-treesitter;
+  };
+
   /*
     Fork of vimUtils.packDir that additionally generates a propagated-build-inputs-file that
     can be used by the lua hooks to generate a proper LUA_PATH
@@ -364,6 +369,7 @@ in
   inherit generateProviderRc;
   inherit legacyWrapper;
   inherit grammarToPlugin;
+  inherit treesitter;
   inherit packDir;
   inherit normalizePlugins normalizedPluginsToVimPackage;
 
