@@ -4,6 +4,7 @@
   runCommandLocal,
   vimUtils,
   tree-sitter,
+  pkgsCross,
   grammarToPlugin,
   nvim-treesitter,
 }:
@@ -134,6 +135,81 @@ let
 
   withAllGrammars = withPlugins (_: allGrammars);
   grammarPlugins = lib.mapAttrs (_: grammarToPlugin) parsersWithMeta;
+
+  wasmNativeFallbackLanguages = [
+    # Native-only until these scanner imports work in Neovim's Wasm runtime.
+    "djot"
+    "doxygen"
+  ];
+
+  buildWasmOrNativeGrammar =
+    args:
+    if lib.elem args.language wasmNativeFallbackLanguages then
+      tree-sitter.buildGrammar args
+    else
+      pkgsCross.wasi32.tree-sitter.buildGrammar args;
+
+  wasmGenerated = callPackage ./generated.nix {
+    buildGrammar = buildWasmOrNativeGrammar;
+    inherit buildQueries;
+  };
+
+  wasmParsersWithQueries = lib.mapAttrs (
+    lang: parser:
+    if lib.hasAttr lang queriesWithDeps then
+      parser.overrideAttrs (old: {
+        passthru = old.passthru or { } // {
+          associatedQuery = queriesWithDeps.${lang};
+        };
+      })
+    else
+      parser
+  ) wasmGenerated.parsers;
+
+  wasmGrammarToPlugin =
+    grammar:
+    let
+      plugin = grammarToPlugin grammar;
+    in
+    if grammar ? associatedQuery then
+      plugin.overrideAttrs {
+        installQueries = false;
+      }
+    else
+      plugin;
+
+  wasmParsersWithMeta = lib.mapAttrs (
+    lang: parser:
+    let
+      requires = parser.requires or [ ];
+      dependencies = map (req: wasmGrammarToPlugin wasmParsersWithQueries.${req}) requires;
+    in
+    if dependencies != [ ] then
+      parser.overrideAttrs (old: {
+        passthru = old.passthru or { } // {
+          inherit dependencies;
+        };
+      })
+    else
+      parser
+  ) wasmParsersWithQueries;
+
+  wasmGrammarPlugins = lib.mapAttrs (_: wasmGrammarToPlugin) wasmParsersWithMeta;
+
+  withAllWasmGrammars =
+    let
+      selectedGrammars = lib.attrValues wasmParsersWithMeta;
+      grammarPlugins = map wasmGrammarToPlugin selectedGrammars;
+      queryPlugins = lib.pipe selectedGrammars [
+        (map (g: g.associatedQuery or null))
+        (lib.filter (q: q != null))
+      ];
+    in
+    nvim-treesitter.overrideAttrs {
+      passthru.dependencies = grammarPlugins ++ queryPlugins;
+    };
+
+  withWasmGrammars = withAllWasmGrammars;
 in
 {
   inherit
@@ -143,8 +219,12 @@ in
     grammarPlugins
     withPlugins
     withAllGrammars
+    wasmGrammarPlugins
+    withWasmGrammars
+    withAllWasmGrammars
     ;
 
   queries = queriesWithDeps;
   parsers = grammarPlugins;
+  wasmParsers = wasmParsersWithMeta;
 }

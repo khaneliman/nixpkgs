@@ -1,8 +1,10 @@
 {
   lib,
   neovim,
+  neovim-unwrapped,
   neovimUtils,
   runCommand,
+  wrapNeovim,
   writableTmpDirAsHomeHook,
 }:
 
@@ -20,6 +22,10 @@ in
       grammarPlugins
       withPlugins
       withAllGrammars
+      wasmParsers
+      wasmGrammarPlugins
+      withWasmGrammars
+      withAllWasmGrammars
       queries
       parsers
       ;
@@ -75,6 +81,28 @@ in
 
           ${lib.concatLines (lib.forEach pluginsToCheck (g: "check_grammar \"${g.grammarName}\" \"${g}\""))}
         '';
+
+      wasm-runtime =
+        let
+          nvimWithWasmGrammar = wrapNeovim (neovim-unwrapped.override { wasmSupport = true; }) {
+            configure.packages.all.start = [ treesitter.wasmGrammarPlugins.nix ];
+          };
+        in
+        runCommand "nvim-treesitter-wasm-runtime-test"
+          {
+            nativeBuildInputs = [
+              nvimWithWasmGrammar
+              writableTmpDirAsHomeHook
+            ];
+            CI = true;
+          }
+          ''
+            nvim --headless --clean -u NONE \
+              -c 'lua assert(vim.treesitter.language.add("nix"))' \
+              -c 'lua local p = vim.treesitter.get_string_parser("{ }", "nix"); assert(p:parse()[1])' \
+              -c 'q'
+            touch "$out"
+          '';
     };
   };
 
