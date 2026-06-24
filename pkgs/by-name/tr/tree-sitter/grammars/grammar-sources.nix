@@ -1214,6 +1214,15 @@
     };
   };
 
+  hlsplaylist = {
+    version = "0.0.5";
+    url = "github:Freed-Wu/tree-sitter-hlsplaylist";
+    hash = "sha256-BvLT+BbnJgM14a896p39dywYy/4S45xOBtBukYTbW6E=";
+    meta = {
+      license = lib.licenses.mit;
+    };
+  };
+
   hocon = {
     version = "0-unstable-2022-11-07";
     url = "github:antosha417/tree-sitter-hocon";
