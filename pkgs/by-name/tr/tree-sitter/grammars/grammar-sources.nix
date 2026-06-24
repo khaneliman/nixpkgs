@@ -189,6 +189,15 @@
     };
   };
 
+  bp = {
+    version = "0.7.0";
+    url = "github:ambroisie/tree-sitter-bp";
+    hash = "sha256-sCvz8Bf0nffSyis9rhppD/iCrlTyTLPAeH6WXg0N6+Y=";
+    meta = {
+      license = lib.licenses.mit;
+    };
+  };
+
   bqn = {
     version = "0.3.2";
     url = "github:shnarazk/tree-sitter-bqn";
