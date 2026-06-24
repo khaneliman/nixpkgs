@@ -669,6 +669,15 @@
     };
   };
 
+  elsa = {
+    version = "1.1.0";
+    url = "github:glapa-grossklag/tree-sitter-elsa";
+    hash = "sha256-zahi5hOXzad6R1+mqmYBFfn2X+SejQUIQzbabgCIJ8w=";
+    meta = {
+      license = lib.licenses.mit;
+    };
+  };
+
   elvish = {
     version = "0-unstable-2023-07-17";
     url = "github:ckafi/tree-sitter-elvish";
