@@ -2808,6 +2808,16 @@
     };
   };
 
+  superhtml = {
+    version = "0.7.0";
+    url = "github:kristoff-it/superhtml";
+    hash = "sha256-bbRqwIdSNgHTNsPZzn+pf/9ix02rT3BXRB6uszaPdi4=";
+    location = "tree-sitter-superhtml";
+    meta = {
+      license = lib.licenses.mit;
+    };
+  };
+
   surface = {
     version = "0.2.0";
     url = "github:connorlay/tree-sitter-surface";
