@@ -682,6 +682,15 @@
     };
   };
 
+  enforce = {
+    version = "0.4.0";
+    url = "github:simonvic/tree-sitter-enforce";
+    hash = "sha256-AbCFauifjU1Lv6PHnfvS4s9WXJBhdcL/t5JUTK6eZbY=";
+    meta = {
+      license = lib.licenses.mit;
+    };
+  };
+
   erlang = rec {
     version = "0.1.0";
     url = "github:WhatsApp/tree-sitter-erlang?ref=${version}";
