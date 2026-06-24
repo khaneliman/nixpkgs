@@ -1424,6 +1424,17 @@
     };
   };
 
+  jinja-inline = {
+    language = "jinja_inline";
+    version = "0.12.1";
+    url = "github:cathaysia/tree-sitter-jinja";
+    hash = "sha256-A0umM9Nf8Q6Ie5YTvaNuY/y8No3rAKnuAQ3QaS1fgrM=";
+    location = "tree-sitter-jinja_inline";
+    meta = {
+      license = lib.licenses.asl20;
+    };
+  };
+
   jinja2 = {
     version = "0-unstable-2023-02-09";
     url = "github:varpeti/tree-sitter-jinja2";
