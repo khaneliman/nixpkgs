@@ -2464,6 +2464,15 @@
     };
   };
 
+  rbs = {
+    version = "0.2.2";
+    url = "github:joker1007/tree-sitter-rbs";
+    hash = "sha256-GE5cW1Nf7S8u5vAGcBZBzfM7mC7yXVR/Tp7hlhmkelA=";
+    meta = {
+      license = lib.licenses.mit;
+    };
+  };
+
   readline = {
     version = "1.1.1";
     url = "github:tree-sitter-grammars/tree-sitter-readline";
