@@ -3520,6 +3520,15 @@
     };
   };
 
+  zathurarc = {
+    version = "0.0.9";
+    url = "github:Freed-Wu/tree-sitter-zathurarc";
+    hash = "sha256-edwLcz1WlcRJOoV2Unpho8wmi7TmcpwysBOAdRKprNw=";
+    meta = {
+      license = lib.licenses.mit;
+    };
+  };
+
   zig = {
     version = "1.1.2-unstable-2025-09-10";
     url = "github:tree-sitter-grammars/tree-sitter-zig";
