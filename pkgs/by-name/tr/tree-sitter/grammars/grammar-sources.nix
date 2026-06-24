@@ -1314,6 +1314,15 @@
     };
   };
 
+  idl = {
+    version = "3.18.0";
+    url = "github:cathaysia/tree-sitter-idl";
+    hash = "sha256-9JNbVdkyHVtqVWuJDRwHl39AO1SIuH/ICZEyjK97M7g=";
+    meta = {
+      license = lib.licenses.asl20;
+    };
+  };
+
   iex = {
     version = "0-unstable-2022-01-08";
     url = "github:elixir-lang/tree-sitter-iex";
