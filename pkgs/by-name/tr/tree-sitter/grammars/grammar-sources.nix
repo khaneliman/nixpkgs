@@ -1205,6 +1205,15 @@
     };
   };
 
+  hlsl = {
+    version = "0.2.0";
+    url = "github:tree-sitter-grammars/tree-sitter-hlsl";
+    hash = "sha256-BWjgXtMN6y/0ahD44Cm8a+MxxVMpCNhkf33V/vsCBTU=";
+    meta = {
+      license = lib.licenses.mit;
+    };
+  };
+
   hocon = {
     version = "0-unstable-2022-11-07";
     url = "github:antosha417/tree-sitter-hocon";
