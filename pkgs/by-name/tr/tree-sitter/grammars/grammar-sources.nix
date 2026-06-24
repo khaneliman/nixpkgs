@@ -2284,6 +2284,15 @@
     };
   };
 
+  printf = {
+    version = "0.5.1";
+    url = "github:tree-sitter-grammars/tree-sitter-printf";
+    hash = "sha256-JddrO4H7b3f/jrYag1lTAqeCzspf18SiIsVV2EJ25ZY=";
+    meta = {
+      license = lib.licenses.isc;
+    };
+  };
+
   prisma = {
     version = "1.6.0";
     url = "github:victorhqc/tree-sitter-prisma";
