@@ -3426,6 +3426,15 @@
     };
   };
 
+  xcompose = {
+    version = "0.4.0";
+    url = "github:tree-sitter-grammars/tree-sitter-xcompose";
+    hash = "sha256-3V+elXkVBk2aZnDy5Q/MDpBWEWb/mvjh2t2pnjnzgA0=";
+    meta = {
+      license = lib.licenses.mit;
+    };
+  };
+
   xit = rec {
     version = "0.2";
     url = "github:synaptiko/tree-sitter-xit?ref=${version}";
