@@ -1632,6 +1632,15 @@
     };
   };
 
+  liquidsoap = {
+    version = "1.2.2";
+    url = "github:savonet/tree-sitter-liquidsoap";
+    hash = "sha256-eFdZxTIHijT6IuOjyIlElfr2HBU+BdOKJsIA1COmW9g=";
+    meta = {
+      license = lib.licenses.isc;
+    };
+  };
+
   llvm = {
     version = "1.1.0-unstable-2025-08-22";
     url = "github:benwilliamgraham/tree-sitter-llvm";
