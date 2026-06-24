@@ -3559,5 +3559,14 @@
       license = lib.licenses.mit;
     };
   };
+
+  zsh = {
+    version = "0.63.5";
+    url = "github:georgeharker/tree-sitter-zsh";
+    hash = "sha256-KCvuyVWR09jlTk+za0FA/z89O5deToxvJ9zNQoBq/+E=";
+    meta = {
+      license = lib.licenses.mit;
+    };
+  };
   #keep-sorted end
 }
