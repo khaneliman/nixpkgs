@@ -3276,6 +3276,15 @@
     };
   };
 
+  vrl = {
+    version = "0.1.1";
+    url = "github:belltoy/tree-sitter-vrl";
+    hash = "sha256-R+wuG8UkvGA11uTiiUAdzzgjRv1ik4W+qh3YwIREUd4=";
+    meta = {
+      license = lib.licenses.mit;
+    };
+  };
+
   vue = {
     version = "0.1.0";
     url = "github:tree-sitter-grammars/tree-sitter-vue";
