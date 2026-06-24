@@ -240,6 +240,15 @@
     };
   };
 
+  caddy = {
+    version = "0.1.1";
+    url = "github:opa-oz/tree-sitter-caddy";
+    hash = "sha256-k0s9f8fB52tWaTRbxrj1AKY3KvujymmQU3Z4DNufXIA=";
+    meta = {
+      license = lib.licenses.gpl3Only;
+    };
+  };
+
   caddyfile = {
     version = "0-unstable-2026-04-06";
     url = "github:caddyserver/tree-sitter-caddyfile";
