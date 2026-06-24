@@ -1948,6 +1948,15 @@
     hash = "sha256-8qSdwHlfnjFuQF4zNdLtU2/tzDRhDZbo9K54Xxgn5+8=";
   };
 
+  nqc = {
+    version = "1.0.0";
+    url = "github:tree-sitter-grammars/tree-sitter-nqc";
+    hash = "sha256-Gf6410cWLENCgI1uIBVBl4RnRuVCHkWkn6sxusmI6j4=";
+    meta = {
+      license = lib.licenses.mit;
+    };
+  };
+
   nu = {
     version = "0-unstable-2026-04-22";
     url = "github:nushell/tree-sitter-nu";
