@@ -3371,6 +3371,16 @@
     };
   };
 
+  wgsl-bevy = {
+    language = "wgsl_bevy";
+    version = "0.1.4";
+    url = "github:tree-sitter-grammars/tree-sitter-wgsl-bevy";
+    hash = "sha256-G92wC2BJXGl+eogbuiaSOLKss+5QTm9RFFRSc2Rgqzw=";
+    meta = {
+      license = lib.licenses.mit;
+    };
+  };
+
   wing = {
     version = "0.83.11";
     url = "github:winglang/tree-sitter-wing";
