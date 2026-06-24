@@ -2504,6 +2504,15 @@
     };
   };
 
+  requirements = {
+    version = "0.6.1";
+    url = "github:tree-sitter-grammars/tree-sitter-requirements";
+    hash = "sha256-jLG+DcdVfC2Rj8SYL3WTBWreOLJWwtxpPxzyvJl77d4=";
+    meta = {
+      license = lib.licenses.mit;
+    };
+  };
+
   rescript = {
     version = "0-unstable-2026-05-02";
     url = "github:rescript-lang/tree-sitter-rescript";
