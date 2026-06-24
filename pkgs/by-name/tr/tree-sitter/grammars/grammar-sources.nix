@@ -3108,6 +3108,15 @@
     };
   };
 
+  typoscript = {
+    version = "0.1.2";
+    url = "github:Teddytrombone/tree-sitter-typoscript";
+    hash = "sha256-wO5f7iwfpPABNSjjQvF5422awARL84czN142EcxX7kA=";
+    meta = {
+      license = lib.licenses.mit;
+    };
+  };
+
   typst = {
     version = "0.11.0";
     url = "github:uben0/tree-sitter-typst";
