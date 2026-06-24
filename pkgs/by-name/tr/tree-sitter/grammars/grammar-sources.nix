@@ -6,6 +6,7 @@
 
 {
 
+  # keep-sorted start block=yes newline_separated=yes
   ada = {
     version = "0.9.0";
     url = "github:briot/tree-sitter-ada/0a4c27dc1308a9d2742de22e5fcfc0c137b3d3f3";
@@ -1988,18 +1989,6 @@
     };
   };
 
-  phpdoc = {
-    version = "0.1.8";
-    url = "github:claytonrcarter/tree-sitter-phpdoc";
-    hash = "sha256-X+ElKI0ZMLCmxEanKsDRL/1KzGZfBrG7zITsT+jSrtQ=";
-    meta = {
-      license = lib.licenses.mit;
-      maintainers = with lib.maintainers; [
-        Stebalien
-      ];
-    };
-  };
-
   php-only = {
     version = "0.24.2-unstable-2026-03-19";
     url = "github:tree-sitter/tree-sitter-php";
@@ -2009,6 +1998,18 @@
       license = lib.licenses.mit;
       maintainers = with lib.maintainers; [
         aciceri
+      ];
+    };
+  };
+
+  phpdoc = {
+    version = "0.1.8";
+    url = "github:claytonrcarter/tree-sitter-phpdoc";
+    hash = "sha256-X+ElKI0ZMLCmxEanKsDRL/1KzGZfBrG7zITsT+jSrtQ=";
+    meta = {
+      license = lib.licenses.mit;
+      maintainers = with lib.maintainers; [
+        Stebalien
       ];
     };
   };
@@ -3217,5 +3218,5 @@
       license = lib.licenses.mit;
     };
   };
-
+  #keep-sorted end
 }
