@@ -2373,6 +2373,15 @@
     };
   };
 
+  pymanifest = {
+    version = "0.6.0";
+    url = "github:tree-sitter-grammars/tree-sitter-pymanifest";
+    hash = "sha256-jaWi0F9ApUSwniN3O7x05VrCceL+0x2+98iJx9+PaZo=";
+    meta = {
+      license = lib.licenses.mit;
+    };
+  };
+
   python = {
     version = "0.25.0";
     url = "github:tree-sitter/tree-sitter-python";
