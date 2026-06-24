@@ -818,6 +818,15 @@
     excludeBrokenTreeSitterJson = true;
   };
 
+  gaptst = {
+    version = "0.4.2";
+    url = "github:gap-system/tree-sitter-gaptst";
+    hash = "sha256-U0P9QoOZST1h6XI83CI0/6/CDTvqkv1Yiq62h6YdHpI=";
+    meta = {
+      license = lib.licenses.mit;
+    };
+  };
+
   gas = {
     version = "0.0.1-unstable-2023-09-15";
     url = "github:sirius94/tree-sitter-gas";
