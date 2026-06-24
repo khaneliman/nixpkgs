@@ -3417,6 +3417,15 @@
     };
   };
 
+  wxml = {
+    version = "0.2.0";
+    url = "github:BlockLune/tree-sitter-wxml";
+    hash = "sha256-ZJeBKccEreak/Fs/Zi5E3m2S//s2R54KwFK3atoCvf0=";
+    meta = {
+      license = lib.licenses.mit;
+    };
+  };
+
   xit = rec {
     version = "0.2";
     url = "github:synaptiko/tree-sitter-xit?ref=${version}";
