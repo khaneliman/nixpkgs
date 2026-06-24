@@ -2861,6 +2861,15 @@
     };
   };
 
+  systemtap = {
+    version = "0.2.0";
+    url = "github:ok-ryoko/tree-sitter-systemtap";
+    hash = "sha256-HzV6RZMTSa41Q5hMiM1FwiHLbho62fuywtKzqrwjNDQ=";
+    meta = {
+      license = lib.licenses.mit;
+    };
+  };
+
   t32 = {
     version = "9.0.1";
     url = "github:xasc/tree-sitter-t32";
