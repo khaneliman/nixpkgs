@@ -65,6 +65,15 @@
     };
   };
 
+  angular = {
+    version = "0.9.2";
+    url = "github:dlvandenberg/tree-sitter-angular";
+    hash = "sha256-zeZgUksE/giBU8hvAUq3NodcndaGjS2BeW8klSbfXvk=";
+    meta = {
+      license = lib.licenses.mit;
+    };
+  };
+
   astro = {
     version = "0-unstable-2025-04-23";
     url = "github:virchau13/tree-sitter-astro";
