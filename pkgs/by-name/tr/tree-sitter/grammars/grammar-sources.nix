@@ -849,6 +849,15 @@
     };
   };
 
+  gdshader = {
+    version = "0.4.0";
+    url = "github:airblast-dev/tree-sitter-gdshader";
+    hash = "sha256-HdRxDusCIxRtlQoo2+gzWmzqG9+8LmmlpShlBTVVK0I=";
+    meta = {
+      license = lib.licenses.mit;
+    };
+  };
+
   gemini = rec {
     version = "0.1.0";
     url = "github:blessanabraham/tree-sitter-gemini?ref=${version}";
