@@ -198,6 +198,15 @@
     };
   };
 
+  bpftrace = {
+    version = "0.3.3";
+    url = "github:sgruszka/tree-sitter-bpftrace";
+    hash = "sha256-f1Hfqml59B0sjI1Yry9vnVmcsJj8kpnSlDub4nGLHSM=";
+    meta = {
+      license = lib.licenses.mit;
+    };
+  };
+
   bqn = {
     version = "0.3.2";
     url = "github:shnarazk/tree-sitter-bqn";
