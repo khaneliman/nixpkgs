@@ -530,6 +530,15 @@
     };
   };
 
+  disassembly = {
+    version = "1.3.1";
+    url = "github:ColinKennedy/tree-sitter-disassembly";
+    hash = "sha256-IM3HzOhJmbb334PZ8q+r2EMi5Bv/rLoy+llPN0aghr8=";
+    meta = {
+      license = lib.licenses.gpl3Only;
+    };
+  };
+
   djot = {
     version = "0-unstable-2025-09-15";
     url = "codeberg:treeman/tree-sitter-djot";
