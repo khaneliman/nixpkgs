@@ -1852,6 +1852,15 @@
     };
   };
 
+  muttrc = {
+    version = "0.0.6";
+    url = "github:neomutt/tree-sitter-muttrc";
+    hash = "sha256-zma/oyMFI+r+/616yXV9b4ptC1FNYpHlpqY/Fez++n0=";
+    meta = {
+      license = lib.licenses.mit;
+    };
+  };
+
   nasm = {
     version = "0-unstable-2024-11-23";
     url = "github:naclsn/tree-sitter-nasm";
