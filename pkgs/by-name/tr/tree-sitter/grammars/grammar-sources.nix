@@ -1713,6 +1713,15 @@
     };
   };
 
+  m68k = {
+    version = "0.3.2";
+    url = "github:grahambates/tree-sitter-m68k";
+    hash = "sha256-g7SZ/TrTaaeGDNOqId4eom9R/5gOyXcmmhWY4WW0fF4=";
+    meta = {
+      license = lib.licenses.mit;
+    };
+  };
+
   mail = {
     version = "0-unstable-2026-03-08";
     url = "github:ficcdaf/tree-sitter-mail";
