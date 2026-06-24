@@ -1792,6 +1792,15 @@
     };
   };
 
+  menhir = {
+    version = "0.4.0";
+    url = "github:Kerl13/tree-sitter-menhir";
+    hash = "sha256-CQVEQurf8Ur5xnz+g7e1nck0a32o4oeMOT78thjx8MQ=";
+    meta = {
+      license = lib.licenses.mit;
+    };
+  };
+
   mermaid = {
     version = "0-unstable-2024-04-22";
     url = "github:monaqa/tree-sitter-mermaid";
