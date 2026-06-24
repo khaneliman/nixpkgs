@@ -3538,5 +3538,15 @@
       license = lib.licenses.mit;
     };
   };
+
+  ziggy = {
+    version = "0.1.0";
+    url = "github:kristoff-it/ziggy";
+    hash = "sha256-bErq4vUwxQo51VL3wb62V0wIdCIBwzEQyEBqaY4LgMI=";
+    location = "tree-sitter-ziggy";
+    meta = {
+      license = lib.licenses.mit;
+    };
+  };
   #keep-sorted end
 }
