@@ -3161,6 +3161,15 @@
     };
   };
 
+  usd = {
+    version = "0.6.0";
+    url = "github:ColinKennedy/tree-sitter-usd";
+    hash = "sha256-r6Sm8FiTgxdYc5cAG5JXVtA5/2jID5H/xmKbjSYn/zI=";
+    meta = {
+      license = lib.licenses.gpl3Only;
+    };
+  };
+
   uxntal = {
     version = "0-unstable-2024-05-05";
     url = "github:tree-sitter-grammars/tree-sitter-uxntal";
