@@ -1004,6 +1004,15 @@
     };
   };
 
+  gnuplot = {
+    version = "1.1.2";
+    url = "github:dpezto/tree-sitter-gnuplot";
+    hash = "sha256-yikCngN87EWqQJcMYhlishXQOEesj28gXKlNCvRgdUc=";
+    meta = {
+      license = lib.licenses.mit;
+    };
+  };
+
   go = {
     version = "0.25.0";
     url = "github:tree-sitter/tree-sitter-go";
