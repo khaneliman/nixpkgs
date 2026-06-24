@@ -1374,6 +1374,15 @@
     };
   };
 
+  ispc = {
+    version = "0.2.0";
+    url = "github:tree-sitter-grammars/tree-sitter-ispc";
+    hash = "sha256-omMcln33qAwc6pgTCZPkSN6FMt00BeCAQVYO7AgDP2M=";
+    meta = {
+      license = lib.licenses.mit;
+    };
+  };
+
   janet-simple = {
     version = "0.0.7-unstable-2026-02-10";
     url = "github:sogaiu/tree-sitter-janet-simple";
