@@ -3267,6 +3267,15 @@
     };
   };
 
+  vimdoc = {
+    version = "4.1.0";
+    url = "github:neovim/tree-sitter-vimdoc";
+    hash = "sha256-K3nzoLlzbgIJc7EnqgYgNDLCBXOg7oy9eV2lI0duwaE=";
+    meta = {
+      license = lib.licenses.asl20;
+    };
+  };
+
   vue = {
     version = "0.1.0";
     url = "github:tree-sitter-grammars/tree-sitter-vue";
