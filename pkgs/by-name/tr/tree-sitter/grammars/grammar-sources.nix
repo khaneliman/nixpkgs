@@ -2696,6 +2696,15 @@
     };
   };
 
+  snl = {
+    version = "0.2.1";
+    url = "github:minijackson/tree-sitter-snl";
+    hash = "sha256-QJG4+fJieOivjwsJuswzzigeUiFNIOu51ILgx0/o6Vo=";
+    meta = {
+      license = lib.licenses.mit;
+    };
+  };
+
   solidity = {
     version = "1.2.13";
     url = "github:JoranHonig/tree-sitter-solidity";
