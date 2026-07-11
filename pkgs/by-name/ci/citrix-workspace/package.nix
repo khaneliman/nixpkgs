@@ -2,6 +2,7 @@
   lib,
   stdenv,
   requireFile,
+  runtimeShell,
   makeWrapper,
   autoPatchelfHook,
   wrapGAppsHook3,
@@ -47,6 +48,7 @@
   libxml2_13,
   libxslt,
   llvmPackages,
+  makeBinaryWrapper,
   more,
   nspr,
   nss,
@@ -134,6 +136,7 @@ stdenv.mkDerivation (finalAttrs: {
     autoPatchelfHook
     file
     libfaketime
+    makeBinaryWrapper
     makeWrapper
     more
     which
@@ -197,6 +200,7 @@ stdenv.mkDerivation (finalAttrs: {
     glib
     glib-networking
     libappindicator
+    (lib.getLib libcap)
     libGL
     pcsclite
 
@@ -364,6 +368,42 @@ stdenv.mkDerivation (finalAttrs: {
       # The GCC 11 package line links against libsoup 3 and WebKitGTK 4.1, but
       # the tarball still contains the legacy WebKitGTK 4.0 bundle.
       rm -rf "$ICAInstDir/Webkit2gtk4.0"
+
+      # Non-root hinst omits USB; redirection requires a system daemon and setuid wrapper.
+      install -m555 -t "$ICAInstDir" \
+        linuxx64/linuxx64.cor/usb/{VDGUSB.DLL,ctxusbd,ctx_usb_isactive}
+      install -m555 linuxx64/linuxx64.cor/usb/ctxusb "$ICAInstDir/ctxusb.real"
+      # security.wrappers preserves ICAROOT, so force the store root before
+      # the privileged binary reads its USB policy.
+      makeBinaryWrapper "$ICAInstDir/ctxusb.real" "$ICAInstDir/ctxusb-wrapper" \
+        --set ICAROOT "$ICAInstDir"
+      # VDGUSB.DLL execs sibling ctxusb directly. Preserve the raw binary for the
+      # setuid wrapper and bridge the sibling path to /run/wrappers.
+      printf '%s\n' \
+        '#!${runtimeShell}' \
+        'exec /run/wrappers/bin/ctxusb "$@"' \
+        > "$ICAInstDir/ctxusb"
+      chmod 555 "$ICAInstDir/ctxusb"
+      install -m644 -t "$ICAInstDir" linuxx64/linuxx64.cor/usb/usb.conf
+      sed -i \
+        -e 's/^[ \t]*VirtualDriver[ \t]*=.*$/&, GenericUSB/' \
+        -e '/\[ICA 3.0\]/a GenericUSB=on' \
+        "$ICAInstDir/config/module.ini"
+      chmod u+w "$ICAInstDir/config/module.ini"
+      printf '[GenericUSB]\nDriverName = VDGUSB.DLL\n' >> "$ICAInstDir/config/module.ini"
+      grep -Fq 'GenericUSB=on' "$ICAInstDir/config/module.ini"
+      grep -Eq '^VirtualDriver[[:space:]]*=.*GenericUSB' "$ICAInstDir/config/module.ini"
+      grep -Fq 'DriverName = VDGUSB.DLL' "$ICAInstDir/config/module.ini"
+
+      # Scope input access to touchscreens classified by 60-input-id. Replace HAL
+      # suppression with udisks/ModemManager ignores; FIDO uses 70-uaccess.
+      mkdir -p $out/lib/udev/rules.d
+      printf '%s\n' \
+        'KERNEL=="event[0-9]*", SUBSYSTEM=="input", ENV{ID_INPUT_TOUCHSCREEN}=="1", TAG+="uaccess"' \
+        > $out/lib/udev/rules.d/61-ica-mtch.rules
+      printf '%s\n' \
+        "SUBSYSTEM==\"usb\", ACTION==\"add\", PROGRAM==\"$ICAInstDir/ctx_usb_isactive\", ENV{UDISKS_IGNORE}=\"1\", ENV{ID_MM_DEVICE_IGNORE}=\"1\"" \
+        > $out/lib/udev/rules.d/85-ica-usb.rules
 
       # Recreate bundled OpenCV SONAME links required by libbgblur.
       for so in "$ICAInstDir"/lib/third_party/*.so.*; do
