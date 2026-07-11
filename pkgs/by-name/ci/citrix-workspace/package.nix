@@ -9,6 +9,7 @@
   atk,
   cacert,
   cairo,
+  coreutils,
   dconf,
   enchant,
   file,
@@ -217,11 +218,23 @@ stdenv.mkDerivation (finalAttrs: {
       isSelfservice = program: (builtins.match "selfservice(.*)" program) != null;
       isWfica = program: (builtins.match "wfica(.*)" program) != null;
 
+      # These helpers read ICAROOT from the environment; injected -icaroot flags
+      # conflict with their argument parsing.
+      isEnvOnly =
+        program:
+        builtins.elem program [
+          "util/logmgr"
+          "util/nfcui"
+          "util/sendfeedback"
+          "util/setlog"
+          "util/storebrowse"
+        ];
+
       icaFlag =
         program:
         if isSelfservice program then
           "--icaroot"
-        else if isWfica program then
+        else if isWfica program || isEnvOnly program then
           null
         else
           "-icaroot";
@@ -239,6 +252,36 @@ stdenv.mkDerivation (finalAttrs: {
           ]
         );
 
+      runtimeSetup = ''
+        timezoneFile="$ICAROOT/timezone"
+        localtime=$(${lib.getExe' coreutils "readlink"} /etc/localtime 2>/dev/null || true)
+
+        case "$localtime" in
+          */zoneinfo/*)
+            if [ -n "''${XDG_RUNTIME_DIR:-}" ] \
+              && [ -d "$XDG_RUNTIME_DIR" ] \
+              && [ -O "$XDG_RUNTIME_DIR" ]; then
+              timezone="''${localtime##*/zoneinfo/}"
+              candidate="$XDG_RUNTIME_DIR/citrix-timezone"
+
+              if printf '%s\n' "$timezone" > "$candidate" 2>/dev/null; then
+                timezoneFile="$candidate"
+              fi
+            fi
+            ;;
+        esac
+
+        redirects="/usr/share/zoneinfo=${tzdata}/share/zoneinfo"
+        redirects="$redirects:/etc/zoneinfo=${tzdata}/share/zoneinfo"
+        redirects="$redirects:/etc/timezone=$timezoneFile"
+
+        if [ -x /run/wrappers/bin/fusermount3 ]; then
+          redirects="$redirects:/usr/bin/fusermount3=/run/wrappers/bin/fusermount3"
+        fi
+
+        export NIX_REDIRECTS="$redirects"
+      '';
+
       # Only the ICA engine needs the top-level client directory on the library
       # path. Leaving it enabled for UI helpers exposes Citrix's session-only
       # libproxy.so to the embedded web stack, which then fails to resolve CGP
@@ -253,7 +296,8 @@ stdenv.mkDerivation (finalAttrs: {
             ''--prefix GST_PLUGIN_SYSTEM_PATH_1_0 : "$ICAInstDir/gst-plugins:${gstPluginPath}"''
             ''--prefix LD_LIBRARY_PATH : "${ldLibraryPath program}"''
             ''--set LD_PRELOAD "${libredirect}/lib/libredirect.so ${lib.getLib pcsclite}/lib/libpcsclite.so"''
-            ''--set NIX_REDIRECTS "/usr/share/zoneinfo=${tzdata}/share/zoneinfo:/etc/zoneinfo=${tzdata}/share/zoneinfo:/etc/timezone=$ICAInstDir/timezone"''
+            # Citrix hardcodes /etc/timezone and /usr/bin/fusermount3; redirect both at launch.
+            "--run ${lib.escapeShellArg runtimeSetup}"
           ]
           ++ lib.optionals (isWfica program) [
             # wfica is an X11 client (it runs under XWayland). On a Wayland
@@ -266,8 +310,9 @@ stdenv.mkDerivation (finalAttrs: {
           ]
         );
 
+      # Runtime timezone detection requires shell wrappers rather than makeBinaryWrapper.
       wrap = program: ''
-        wrapProgram $out/opt/citrix-icaclient/${program} \
+        wrapProgramShell $out/opt/citrix-icaclient/${program} \
           ${wrapperArgs program}
       '';
 
@@ -277,7 +322,7 @@ stdenv.mkDerivation (finalAttrs: {
       '';
 
       makeBinWrapper = program: wrapperName: ''
-        makeWrapper $out/opt/citrix-icaclient/${program} $out/bin/${wrapperName} \
+        makeShellWrapper $out/opt/citrix-icaclient/${program} $out/bin/${wrapperName} \
           ${wrapperArgs program}
       '';
 
@@ -294,6 +339,7 @@ stdenv.mkDerivation (finalAttrs: {
         "util/conncenter"
         "util/ctx_rehash"
         "util/ctxwebhelper"
+        "util/storebrowse"
       ];
     in
     ''
@@ -331,19 +377,19 @@ stdenv.mkDerivation (finalAttrs: {
       # FHS launcher hinst generates even for non-root installs; it hardcodes
       # store paths without any of the wrapper environment.
       rm -f "$ICAInstDir/wfica.sh"
-      if [ -f "$ICAInstDir/util/setlog" ]; then
-        chmod +x "$ICAInstDir/util/setlog"
-        ln -sf "$ICAInstDir/util/setlog" "$out/bin/citrix-setlog"
-      fi
+      chmod +x "$ICAInstDir/util/setlog"
       ${mkWrappers wrapLink toWrap}
       ${makeBinWrapper "wfica" "wfica"}
+      ${makeBinWrapper "util/setlog" "citrix-setlog"}
       ${mkWrappers wrap [
         "PrimaryAuthManager"
         "ServiceRecord"
         "AuthManagerDaemon"
+        "util/logmgr"
+        "util/new_store"
+        "util/nfcui"
+        "util/sendfeedback"
       ]}
-
-      ln -sf $ICAInstDir/util/storebrowse $out/bin/storebrowse
 
       # As explained in https://wiki.archlinux.org/index.php/Citrix#Security_Certificates
       echo "Expanding certificates..."
