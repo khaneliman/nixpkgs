@@ -98,6 +98,18 @@ let
     '';
   };
 
+  # hinst writes the service-continuity manifest only to user profiles; package a system copy.
+  nmhManifest = builtins.toJSON {
+    name = "com.citrix.workspace.native";
+    description = "Launch NMH";
+    path = "${placeholder "out"}/opt/citrix-icaclient/NativeMessagingHost";
+    type = "stdio";
+    allowed_origins = [
+      "chrome-extension://dbdlmgpfijccjgnnpacnamgdfmljoeee/"
+      "chrome-extension://pmdpflpcmcomdkocbehamllbfkdgnalf/"
+    ];
+  };
+
 in
 
 stdenv.mkDerivation (finalAttrs: {
@@ -227,6 +239,8 @@ stdenv.mkDerivation (finalAttrs: {
       isEnvOnly =
         program:
         builtins.elem program [
+          "NativeMessagingHost"
+          "UrlRedirector"
           "util/logmgr"
           "util/nfcui"
           "util/sendfeedback"
@@ -337,6 +351,8 @@ stdenv.mkDerivation (finalAttrs: {
       mkWrappers = lib.concatMapStringsSep "\n";
 
       toWrap = [
+        "NativeMessagingHost"
+        "UrlRedirector"
         "adapter"
         "selfservice"
         "util/configmgr"
@@ -413,6 +429,16 @@ stdenv.mkDerivation (finalAttrs: {
         -e '/###CitrixUser###/d' \
         -e 's,###USER###,default,' \
         linuxx64/linuxx64.cor/ctxcwalogd.service > $out/lib/systemd/user/ctxcwalogd.service
+
+      # hinst writes browser manifests only to user homes; package system copies.
+      for browser in opt/chrome chromium opt/edge; do
+        mkdir -p "$out/etc/$browser/native-messaging-hosts"
+        printf '%s' ${lib.escapeShellArg nmhManifest} \
+          > "$out/etc/$browser/native-messaging-hosts/com.citrix.workspace.native.json"
+        sed "s,/opt/Citrix/ICAClient,$ICAInstDir,g" \
+          "$ICAInstDir/config/com.citrix.urlinterceptor.json" \
+          > "$out/etc/$browser/native-messaging-hosts/com.citrix.urlinterceptor.json"
+      done
 
       # Recreate bundled OpenCV SONAME links required by libbgblur.
       for so in "$ICAInstDir"/lib/third_party/*.so.*; do
