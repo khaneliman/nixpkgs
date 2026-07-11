@@ -405,6 +405,15 @@ stdenv.mkDerivation (finalAttrs: {
         "SUBSYSTEM==\"usb\", ACTION==\"add\", PROGRAM==\"$ICAInstDir/ctx_usb_isactive\", ENV{UDISKS_IGNORE}=\"1\", ENV{ID_MM_DEVICE_IGNORE}=\"1\"" \
         > $out/lib/udev/rules.d/85-ica-usb.rules
 
+      # Package hinst's user unit; setlog/logmgr require its daemon.
+      mkdir -p $out/lib/systemd/user
+      sed \
+        -e '/^#/d' \
+        -e "s,###ICAROOT###,$ICAInstDir,g" \
+        -e '/###CitrixUser###/d' \
+        -e 's,###USER###,default,' \
+        linuxx64/linuxx64.cor/ctxcwalogd.service > $out/lib/systemd/user/ctxcwalogd.service
+
       # Recreate bundled OpenCV SONAME links required by libbgblur.
       for so in "$ICAInstDir"/lib/third_party/*.so.*; do
         soname=$(objdump -p "$so" | awk '$1 == "SONAME" { print $2 }')
