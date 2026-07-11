@@ -76,6 +76,9 @@
   libxcb,
   zlib,
   extraCerts ? [ ],
+  # PKCS#11 modules linked under $ICAROOT/PKCS#11. The first is also used for
+  # client authentication and in-session redirection.
+  extraPkcs11Modules ? [ ],
 }:
 
 let
@@ -234,6 +237,8 @@ stdenv.mkDerivation (finalAttrs: {
       isSelfservice = program: (builtins.match "selfservice(.*)" program) != null;
       isWfica = program: (builtins.match "wfica(.*)" program) != null;
 
+      pkcs11Module = lib.head extraPkcs11Modules;
+
       # These helpers read ICAROOT from the environment; injected -icaroot flags
       # conflict with their argument parsing.
       isEnvOnly =
@@ -346,6 +351,10 @@ stdenv.mkDerivation (finalAttrs: {
 
       copyCert = path: ''
         cp -v ${path} $out/opt/citrix-icaclient/keystore/cacerts/${baseNameOf path}
+      '';
+
+      linkPkcs11Module = path: ''
+        ln -s ${path} "$ICAInstDir/PKCS#11/"
       '';
 
       mkWrappers = lib.concatMapStringsSep "\n";
@@ -474,6 +483,25 @@ stdenv.mkDerivation (finalAttrs: {
       popd
 
       ${mkWrappers copyCert extraCerts}
+      ${mkWrappers linkPkcs11Module extraPkcs11Modules}
+      ${lib.optionalString (extraPkcs11Modules != [ ]) ''
+        sed -i \
+          '/<key>PKCS11module<\/key>/{n;s#<value></value>#<value>${baseNameOf pkcs11Module}</value>#;}' \
+          "$ICAInstDir/config/AuthManConfig.xml"
+        grep -Fq '<value>${baseNameOf pkcs11Module}</value>' \
+          "$ICAInstDir/config/AuthManConfig.xml"
+
+        # VDSCARDV2.DLL dlopens literal per-card and fallback paths from
+        # scardConfig.json. Replace the Debian FHS paths with the store path.
+        sed -i \
+          -e 's#"PKCS11Lib": *"[^"]*"#"PKCS11Lib": "${pkcs11Module}"#' \
+          -e 's#"DefaultPKCS11Lib": *"[^"]*"#"DefaultPKCS11Lib": "${pkcs11Module}"#' \
+          "$ICAInstDir/config/scardConfig.json"
+        grep -Fq '"PKCS11Lib": "${pkcs11Module}"' \
+          "$ICAInstDir/config/scardConfig.json"
+        grep -Fq '"DefaultPKCS11Lib": "${pkcs11Module}"' \
+          "$ICAInstDir/config/scardConfig.json"
+      ''}
 
       # We support only Gstreamer 1.0
       rm $ICAInstDir/util/{gst_aud_{play,read},gst_*0.10,libgstflatstm0.10.so} || true
