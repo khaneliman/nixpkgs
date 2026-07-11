@@ -4660,6 +4660,15 @@
   "sec-citrix-custom-certs": [
     "index.html#sec-citrix-custom-certs"
   ],
+  "sec-citrix-system-integration": [
+    "index.html#sec-citrix-system-integration"
+  ],
+  "sec-citrix-browser-integration": [
+    "index.html#sec-citrix-browser-integration"
+  ],
+  "sec-citrix-unsupported-integrations": [
+    "index.html#sec-citrix-unsupported-integrations"
+  ],
   "sec-darwin-builder": [
     "index.html#sec-darwin-builder"
   ],
