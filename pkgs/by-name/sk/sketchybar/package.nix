@@ -5,6 +5,7 @@
   nix-update-script,
   apple-sdk_15,
   versionCheckHook,
+  llvmPackages,
 }:
 
 let
@@ -13,7 +14,6 @@ let
   target =
     {
       "aarch64-darwin" = "arm64";
-      "x86_64-darwin" = "x86";
     }
     .${system} or (throw "Unsupported system: ${system}");
 in
@@ -28,11 +28,19 @@ stdenv.mkDerivation (finalAttrs: {
     hash = "sha256-5tyc/yYzdV/3JTtujuj7le/14XkC7TlN/nZg7tOZsNg=";
   };
 
+  nativeBuildInputs = [
+    # TODO: Remove once #536365 reaches this branch
+    llvmPackages.lld
+  ];
+
   buildInputs = [
     apple-sdk_15
   ];
 
   makeFlags = [ target ];
+
+  # TODO: Remove once #536365 reaches this branch
+  env.NIX_CFLAGS_LINK = "-fuse-ld=lld";
 
   installPhase = ''
     runHook preInstall
