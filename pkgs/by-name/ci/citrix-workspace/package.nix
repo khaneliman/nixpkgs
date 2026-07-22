@@ -49,7 +49,6 @@
   more,
   nspr,
   nss,
-  opencv4,
   pango,
   pcsclite,
   sane-backends,
@@ -73,7 +72,6 @@
   xdpyinfo,
   libxcb,
   zlib,
-
   extraCerts ? [ ],
 }:
 
@@ -94,16 +92,6 @@ let
     paths = [ (lib.getLib fuse3) ];
     postBuild = ''
       ln -sf $out/lib/libfuse3.so.3.* $out/lib/libfuse3.so.3
-    '';
-  };
-
-  opencv4' = symlinkJoin {
-    name = "opencv4-compat";
-    paths = [ opencv4 ];
-    postBuild = ''
-      for so in ${opencv4}/lib/*.so; do
-        ln -s "$so" $out/lib/$(basename "$so").410 || true
-      done
     '';
   };
 
@@ -188,7 +176,6 @@ stdenv.mkDerivation (finalAttrs: {
     llvmPackages.libunwind
     nspr
     nss
-    opencv4'
     pango
     pcsclite
     sane-backends
@@ -332,6 +319,15 @@ stdenv.mkDerivation (finalAttrs: {
       # the tarball still contains the legacy WebKitGTK 4.0 bundle.
       rm -rf "$ICAInstDir/Webkit2gtk4.0"
 
+      # Recreate bundled OpenCV SONAME links required by libbgblur.
+      for so in "$ICAInstDir"/lib/third_party/*.so.*; do
+        soname=$(objdump -p "$so" | awk '$1 == "SONAME" { print $2 }')
+        filename=$(basename "$so")
+        if [ -n "$soname" ] && [ "$soname" != "$filename" ]; then
+          ln -sf "$filename" "$ICAInstDir/lib/third_party/$soname"
+        fi
+      done
+
       # FHS launcher hinst generates even for non-root installs; it hardcodes
       # store paths without any of the wrapper environment.
       rm -f "$ICAInstDir/wfica.sh"
@@ -368,6 +364,7 @@ stdenv.mkDerivation (finalAttrs: {
       mkdir -p "$ICAInstDir/gst-plugins"
       ln -s "$ICAInstDir/util/libgstflatstm1.0.so" \
         "$ICAInstDir/gst-plugins/libgstflatstm.so"
+      ln -s "$ICAInstDir/lib/libctxbeffect.so" "$ICAInstDir/gst-plugins/"
 
       # `hinst` disables multimedia when it cannot link into FHS plugin
       # directories. In Nix we provide the plugin path via wrappers instead.
@@ -427,6 +424,7 @@ stdenv.mkDerivation (finalAttrs: {
   dontAutoPatchelf = true;
   postFixup = ''
     addAutoPatchelfSearchPath "$out/opt/citrix-icaclient/lib"
+    addAutoPatchelfSearchPath "$out/opt/citrix-icaclient/lib/third_party"
     autoPatchelf -- "$out"
 
     $out/opt/citrix-icaclient/util/ctx_rehash
