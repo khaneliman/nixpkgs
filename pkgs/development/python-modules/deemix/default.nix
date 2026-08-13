@@ -2,6 +2,7 @@
   lib,
   buildPythonPackage,
   fetchPypi,
+  setuptools,
   spotipy,
   click,
   pycryptodomex,
@@ -13,14 +14,16 @@
 buildPythonPackage rec {
   pname = "deemix";
   version = "3.6.6";
-  format = "setuptools";
+  pyproject = true;
 
   src = fetchPypi {
     inherit pname version;
     hash = "sha256-xEahzA1PIrGPfnnOcuXQLVQpSVOUFk6/0v9ViLgWCwk=";
   };
 
-  propagatedBuildInputs = [
+  build-system = [ setuptools ];
+
+  dependencies = [
     spotipy
     click
     pycryptodomex
