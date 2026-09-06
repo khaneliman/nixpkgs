@@ -28,7 +28,8 @@
   git,
   autoconf,
   libtool,
-  typescript_5,
+  yq-go,
+  typescript_7,
   wayland,
   libxkbcommon,
   unstableGitUpdater,
@@ -44,6 +45,10 @@ rustPlatform.buildRustPackage {
     rev = "56e29ecbde3a4aba994a9df047b5398feb447c1b";
     hash = "sha256-dHdgWrygSXqKf9fpYRVDj+Ql97Or/kjBfN/mECy2ipc=";
   };
+
+  postPatch = ''
+    yq -i '.compilerOptions += {"strict": false, "rootDir": "ts"}' tsconfig.json
+  '';
 
   buildInputs = [
     ffmpeg
@@ -73,7 +78,8 @@ rustPlatform.buildRustPackage {
   nativeBuildInputs = [
     cmake
     git
-    typescript_5
+    yq-go
+    typescript_7
     makeWrapper
   ]
   ++ lib.optionals stdenv.hostPlatform.isLinux [
