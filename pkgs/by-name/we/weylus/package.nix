@@ -31,11 +31,12 @@
   typescript_5,
   wayland,
   libxkbcommon,
+  unstableGitUpdater,
 }:
 
 rustPlatform.buildRustPackage {
   pname = "weylus";
-  version = "unstable-2025-10-08";
+  version = "0.11.4-unstable-2025-10-08";
 
   src = fetchFromGitHub {
     owner = "H-M-H";
@@ -105,6 +106,10 @@ rustPlatform.buildRustPackage {
     NIX_CFLAGS_COMPILE = toString [
       "-Wno-incompatible-pointer-types"
     ];
+  };
+
+  passthru.updateScript = unstableGitUpdater {
+    tagPrefix = "v";
   };
 
   meta = {
