@@ -16,7 +16,7 @@
   ufolib2,
 }:
 
-buildPythonPackage rec {
+buildPythonPackage (finalAttrs: {
   pname = "ufo2ft";
   version = "3.9.0";
   pyproject = true;
@@ -24,7 +24,7 @@ buildPythonPackage rec {
   src = fetchFromGitHub {
     owner = "googlefonts";
     repo = "ufo2ft";
-    tag = "v${version}";
+    tag = "v${finalAttrs.version}";
     hash = "sha256-McMhpGIvQHpsOe3jza6E3b72cKiY8gr8W9OY2Mg9JvE=";
   };
 
@@ -69,8 +69,8 @@ buildPythonPackage rec {
   meta = {
     description = "Bridge from UFOs to FontTools objects";
     homepage = "https://github.com/googlefonts/ufo2ft";
-    changelog = "https://github.com/googlefonts/ufo2ft/releases/tag/${src.tag}";
+    changelog = "https://github.com/googlefonts/ufo2ft/releases/tag/${finalAttrs.src.tag}";
     license = lib.licenses.mit;
     maintainers = with lib.maintainers; [ jopejoe1 ];
   };
-}
+})
