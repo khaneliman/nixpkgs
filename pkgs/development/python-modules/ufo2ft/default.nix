@@ -53,18 +53,6 @@ buildPythonPackage (finalAttrs: {
   ++ finalAttrs.passthru.optional-dependencies.compreffor
   ++ finalAttrs.passthru.optional-dependencies.pathops;
 
-  disabledTests = [
-    # Do not depend on skia.
-    "test_removeOverlaps_CFF_pathops"
-    "test_removeOverlaps_pathops"
-    "test_custom_filters_as_argument"
-    "test_custom_filters_as_argument"
-    # Some integration tests fail
-    "test_compileVariableCFF2"
-    "test_compileVariableTTF"
-    "test_drop_glyph_names_variable"
-    "test_drop_glyph_names_variable"
-  ];
   optional-dependencies = {
     compreffor = [ compreffor ];
     cffsubr = [ ];
