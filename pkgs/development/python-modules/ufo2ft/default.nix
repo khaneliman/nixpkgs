@@ -4,16 +4,17 @@
   buildPythonPackage,
   cffsubr,
   compreffor,
-  cu2qu,
   defcon,
   fetchFromGitHub,
   fontmath,
   fonttools,
   pytestCheckHook,
+  setuptools,
   setuptools-scm,
   skia-pathops,
   syrupy,
   ufolib2,
+  uharfbuzz,
 }:
 
 buildPythonPackage (finalAttrs: {
@@ -29,19 +30,15 @@ buildPythonPackage (finalAttrs: {
   };
 
   build-system = [
+    setuptools
     setuptools-scm
   ];
 
   dependencies = [
-    cu2qu
     fontmath
     fonttools
-    defcon
-    compreffor
     booleanoperations
     cffsubr
-    ufolib2
-    skia-pathops
   ]
   ++ fonttools.optional-dependencies.lxml
   ++ fonttools.optional-dependencies.ufo;
@@ -49,7 +46,12 @@ buildPythonPackage (finalAttrs: {
   nativeCheckInputs = [
     pytestCheckHook
     syrupy
-  ];
+    ufolib2
+    uharfbuzz
+    defcon
+  ]
+  ++ finalAttrs.passthru.optional-dependencies.compreffor
+  ++ finalAttrs.passthru.optional-dependencies.pathops;
 
   disabledTests = [
     # Do not depend on skia.
@@ -63,6 +65,11 @@ buildPythonPackage (finalAttrs: {
     "test_drop_glyph_names_variable"
     "test_drop_glyph_names_variable"
   ];
+  optional-dependencies = {
+    compreffor = [ compreffor ];
+    cffsubr = [ ];
+    pathops = [ skia-pathops ];
+  };
 
   pythonImportsCheck = [ "ufo2ft" ];
 
