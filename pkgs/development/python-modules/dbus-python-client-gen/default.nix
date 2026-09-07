@@ -8,15 +8,17 @@
   pytestCheckHook,
 }:
 
-buildPythonPackage rec {
+buildPythonPackage (finalAttrs: {
   pname = "dbus-python-client-gen";
   version = "0.8.4";
   pyproject = true;
 
+  __structuredAttrs = true;
+
   src = fetchFromGitHub {
     owner = "stratis-storage";
     repo = "dbus-python-client-gen";
-    tag = "v${version}";
+    tag = "v${finalAttrs.version}";
     hash = "sha256-nmF6fdUgr7ACK7Pvy3ikc0Xjzfh6iTYNLc+rAf9I9Mg=";
   };
 
@@ -34,8 +36,8 @@ buildPythonPackage rec {
   meta = {
     description = "Python library for generating dbus-python client code";
     homepage = "https://github.com/stratis-storage/dbus-python-client-gen";
-    changelog = "https://github.com/stratis-storage/dbus-python-client-gen/blob/v${version}/CHANGES.txt";
+    changelog = "https://github.com/stratis-storage/dbus-python-client-gen/blob/v${finalAttrs.version}/CHANGES.txt";
     license = lib.licenses.mpl20;
     maintainers = with lib.maintainers; [ nickcao ];
   };
-}
+})
