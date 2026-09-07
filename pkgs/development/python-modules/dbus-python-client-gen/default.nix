@@ -2,6 +2,7 @@
   lib,
   buildPythonPackage,
   fetchFromGitHub,
+  setuptools,
   into-dbus-python,
   dbus-python,
   pytestCheckHook,
@@ -10,7 +11,7 @@
 buildPythonPackage rec {
   pname = "dbus-python-client-gen";
   version = "0.8.4";
-  format = "setuptools";
+  pyproject = true;
 
   src = fetchFromGitHub {
     owner = "stratis-storage";
@@ -19,7 +20,9 @@ buildPythonPackage rec {
     hash = "sha256-nmF6fdUgr7ACK7Pvy3ikc0Xjzfh6iTYNLc+rAf9I9Mg=";
   };
 
-  propagatedBuildInputs = [
+  build-system = [ setuptools ];
+
+  dependencies = [
     into-dbus-python
     dbus-python
   ];
