@@ -2,6 +2,7 @@
   lib,
   buildPythonPackage,
   fetchFromGitHub,
+  setuptools,
 
   # optionals
   genshi,
@@ -15,7 +16,7 @@
 buildPythonPackage rec {
   pname = "static3";
   version = "0.7.0";
-  format = "setuptools";
+  pyproject = true;
 
   src = fetchFromGitHub {
     owner = "rmohr";
@@ -23,6 +24,8 @@ buildPythonPackage rec {
     rev = "v${version}";
     hash = "sha256-uFgv+57/UZs4KoOdkFxbvTEDQrJbb0iYJ5JoWWN4yFY=";
   };
+
+  build-system = [ setuptools ];
 
   optional-dependencies = {
     KidMagic = [
