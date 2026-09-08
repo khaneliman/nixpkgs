@@ -14,7 +14,6 @@
   coreutils,
   diffenator2,
   ffmpeg-python,
-  fontbakery,
   fontfeatures,
   fontmake,
   fonttools,
@@ -49,6 +48,8 @@
   unidecode,
   vharfbuzz,
   vttlib,
+  gitpython,
+  freetype-py,
   python,
   gitUpdater,
 }:
@@ -59,14 +60,14 @@ let
 in
 buildPythonPackage rec {
   pname = "gftools";
-  version = "0.9991";
+  version = "0.10.0";
   pyproject = true;
 
   src = fetchFromGitHub {
     owner = "googlefonts";
     repo = "gftools";
     tag = "v${version}";
-    hash = "sha256-660/sU9aSt1y3iljss82SJT8QTMnVMjjJECIgHA9xso=";
+    hash = "sha256-EpEMvHoSuuptVu/GVk+RFmxa0jE3acg9KUYtUrodHOs=";
   };
 
   postPatch = ''
@@ -160,6 +161,7 @@ buildPythonPackage rec {
     unidecode
     vharfbuzz
     vttlib
+    gitpython
   ]
   ++ fonttools.optional-dependencies.ufo
   ++ fontmake.optional-dependencies.json;
@@ -167,8 +169,8 @@ buildPythonPackage rec {
   optional-dependencies = {
     qa = [
       diffenator2
-      fontbakery
       pycairo
+      freetype-py
     ];
     test = [
       black
