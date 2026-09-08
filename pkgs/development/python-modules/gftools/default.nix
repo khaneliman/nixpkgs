@@ -50,6 +50,7 @@
   vharfbuzz,
   vttlib,
   python,
+  gitUpdater,
 }:
 
 let
@@ -192,6 +193,12 @@ buildPythonPackage rec {
   ];
 
   pythonImportsCheck = [ "gftools" ];
+
+  passthru.updateScript = gitUpdater {
+    rev-prefix = "v";
+    # Miss Released version
+    ignoredVersions = "0.9991";
+  };
 
   meta = {
     description = "Misc tools for working with the Google Fonts library";
