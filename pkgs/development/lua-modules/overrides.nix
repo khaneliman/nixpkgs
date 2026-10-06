@@ -520,10 +520,7 @@ in
 
   lua-lsp = prev.lua-lsp.overrideAttrs {
     # until Alloyed/lua-lsp#28
-    postConfigure = ''
-      substituteInPlace ''${rockspecFilename} \
-        --replace '"dkjson ~> 2.5",' '"dkjson >= 2.5",'
-    '';
+    luarocksRelaxDeps = [ "dkjson" ];
   };
 
   lua-resty-jwt = prev.lua-resty-jwt.overrideAttrs {
@@ -928,12 +925,10 @@ in
       "neorg.modules.core.concealer.module"
     ];
 
-    # Relax dependencies
-    postConfigure = ''
-      substituteInPlace ''${rockspecFilename} \
-        --replace-fail "'nvim-nio ~> 1.7'," "'nvim-nio >= 1.7'," \
-        --replace-fail "'nui.nvim == 0.3.0'," "'nui.nvim',"
-    '';
+    luarocksRelaxDeps = [
+      "nvim-nio"
+      "nui.nvim"
+    ];
   };
 
   neotest = prev.neotest.overrideAttrs (old: {
@@ -1197,12 +1192,11 @@ in
     preConfigure = (old.preConfigure or "") + ''
       rm -f luarocks.lock
     '';
-    postConfigure = (old.postConfigure or "") + ''
-      substituteInPlace ''${rockspecFilename} \
-        --replace-fail '"ltreesitter == 0.3.0",' '"ltreesitter >= 0.3.0",' \
-        --replace-fail '"luv == 1.52.1",' '"luv >= 1.52.1",' \
-        --replace-fail '"tl == 0.24.8",' '"tl >= 0.24.8",'
-    '';
+    luarocksRelaxDeps = [
+      "ltreesitter"
+      "luv"
+      "tl"
+    ];
   });
 
   tiktoken_core = prev.tiktoken_core.overrideAttrs (old: {
