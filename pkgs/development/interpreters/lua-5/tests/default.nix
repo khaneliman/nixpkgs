@@ -125,4 +125,110 @@ lib.recurseIntoAttrs {
         touch $out
       '';
 
+  # The rockspec pins versions nixpkgs does not have, so luarocks rejects it
+  # unless luarocksRelaxDeps drops the constraints.
+  checkRelaxDeps =
+    let
+      build =
+        {
+          luarocksRelaxDeps,
+          luaDep ? "lua >= 5.1",
+          known ? false,
+          lockfile ? false,
+          topLevelReturn ? false,
+        }:
+        let
+          src = pkgs.runCommandLocal "relax-deps-test-src" { } (
+            ''
+              mkdir -p "$out"
+              cat > "$out/relax-deps-test-0.1-1.rockspec" <<'EOF'
+              rockspec_format = "3.0"
+              package = "relax-deps-test"
+              version = "0.1-1"
+              source = { url = "." }
+              description = { summary = "alt-getopt ~> 0.1" }
+              dependencies = {
+                "${luaDep}",
+                "alt-getopt ~> 0.1",
+                [[datafile == 0.0]],
+                -- luarocks merges platform lists by index; nil keeps the base entry
+                platforms = { unix = { nil, "alt-getopt ~> 0.1" } },
+              }
+              build_dependencies = { "alt-getopt ~> 0.1" }
+              build = { type = "none" }
+              EOF
+            ''
+            + lib.optionalString lockfile ''
+              echo 'return { dependencies = { ["alt-getopt"] = "0.1-1" } }' > "$out/luarocks.lock"
+            ''
+            # like fennel's rockspec; statements appended after it cannot run
+            + lib.optionalString topLevelReturn ''
+              echo 'return nil' >> "$out/relax-deps-test-0.1-1.rockspec"
+            ''
+          );
+        in
+        lua.pkgs.buildLuarocksPackage {
+          pname = "relax-deps-test";
+          version = "0.1-1";
+          inherit src luarocksRelaxDeps;
+          # the builder copies a knownRockspec from the store, so the copy is read-only
+          knownRockspec = if known then "${src}/relax-deps-test-0.1-1.rockspec" else null;
+          propagatedBuildInputs = [
+            lua.pkgs.alt-getopt
+            lua.pkgs.datafile
+          ];
+          # strings outside dependency tables stay as written, and the hook is not
+          # listed as an external dependency
+          postInstall = ''
+            grep -F 'summary = "alt-getopt ~> 0.1"' "$(find "$out" -name relax-deps-test-0.1-1.rockspec)"
+            if grep -F luarocks-relax-deps-hook "$LUAROCKS_CONFIG"; then exit 1; fi
+          '';
+        };
+
+      failsWith =
+        message: drv:
+        pkgs.runCommandLocal "${drv.name}-fails" { failed = pkgs.testers.testBuildFailure drv; } ''
+          grep -F ${lib.escapeShellArg message} "$failed/testBuildFailure.log"
+          touch $out
+        '';
+    in
+    lib.recurseIntoAttrs {
+      names = build {
+        luarocksRelaxDeps = [
+          "alt-getopt"
+          "datafile"
+        ];
+        known = true;
+      };
+      all = build { luarocksRelaxDeps = true; };
+      partial = failsWith "Could not satisfy dependency datafile" (build {
+        luarocksRelaxDeps = [ "alt-getopt" ];
+      });
+      keepsLua = failsWith "lua >= 9.0" (build {
+        luarocksRelaxDeps = true;
+        luaDep = "lua >= 9.0";
+      });
+      relaxesLua = build {
+        luarocksRelaxDeps = [
+          "lua"
+          "alt-getopt"
+          "datafile"
+        ];
+        luaDep = "lua >= 9.0";
+      };
+      unknownName = failsWith ''"nosuch" is not a dependency'' (build {
+        luarocksRelaxDeps = [ "nosuch" ];
+      });
+      lockfile = failsWith "luarocksRelaxDepsHook: luarocks.lock" (build {
+        luarocksRelaxDeps = true;
+        lockfile = true;
+      });
+      topLevelReturn = failsWith "patch it instead" (build {
+        luarocksRelaxDeps = true;
+        topLevelReturn = true;
+      });
+      unrelaxed = failsWith "alt-getopt ~> 0.1" (build {
+        luarocksRelaxDeps = [ ];
+      });
+    };
 }

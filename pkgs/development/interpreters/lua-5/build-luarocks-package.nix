@@ -10,6 +10,7 @@
 
   # Whether the derivation provides a lua module or not.
   luarocksCheckHook,
+  luarocksRelaxDepsHook,
   luaLib,
 }:
 
@@ -106,6 +107,7 @@ let
           wrapLua
           luarocks_bootstrap
         ]
+        ++ lib.optionals (self.luarocksRelaxDeps or [ ] != [ ]) [ luarocksRelaxDepsHook ]
         ++ nativeBuildInputs
         ++ lib.optionals self.doCheck self.nativeCheckInputs;
 
@@ -146,9 +148,13 @@ let
         # TODO make it the default variable
         luarocksConfig =
           let
-            externalDepsGenerated = lib.filter (drv: !drv ? luaModule) (
-              self.finalPackage.nativeBuildInputs ++ self.propagatedBuildInputs ++ self.buildInputs
-            );
+            # luarocksRelaxDepsHook only runs while configuring. luarocks merges these
+            # dirs over its platform defaults by index, so an extra entry would drop one
+            # (the macOS SDK). Match by name: splicing resolves nativeBuildInputs to
+            # another derivation in cross builds.
+            externalDepsGenerated = lib.filter (
+              drv: !drv ? luaModule && lib.getName drv != "luarocks-relax-deps-hook"
+            ) (self.finalPackage.nativeBuildInputs ++ self.propagatedBuildInputs ++ self.buildInputs);
 
             generatedConfig = luaLib.generateLuarocksConfig {
               externalDeps = lib.unique (self.externalDeps ++ externalDepsGenerated);

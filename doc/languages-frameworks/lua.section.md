@@ -266,6 +266,9 @@ It accepts as arguments:
 
 * 'luarocksConfig': a nix value that directly maps to the luarocks config used during
   the installation
+* 'luarocksRelaxDeps': dependencies whose version constraints are dropped from the rockspec before luarocks checks them, for example `[ "compat53" ]` turns `"compat53 ~> 0.14"` into `"compat53"`.
+  Set it to `true` to relax every dependency except `lua`; list `"lua"` explicitly to relax the interpreter bound, and keep `disabled` accurate when you do.
+  The build fails if a listed name is not a dependency of the rockspec, or if the source contains a `luarocks.lock`, whose pins luarocks uses instead of the rockspec; remove that file in `preConfigure`.
 
 By default `meta.platforms` is set to the same value as the interpreter unless overridden otherwise.
 
